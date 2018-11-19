@@ -16,23 +16,24 @@
  */
 package org.jmeld.ui;
 
-import org.jmeld.diff.JMChunk;
-import org.jmeld.diff.JMDelta;
-import org.jmeld.diff.JMRevision;
-import org.jmeld.settings.JMeldSettings;
-import org.jmeld.ui.search.SearchCommand;
-import org.jmeld.ui.search.SearchHit;
-import org.jmeld.ui.search.SearchHits;
-import org.jmeld.ui.swing.*;
-import org.jmeld.ui.text.BufferDocumentChangeListenerIF;
-import org.jmeld.ui.text.BufferDocumentIF;
-import org.jmeld.ui.text.JMDocumentEvent;
-import org.jmeld.ui.util.FontUtil;
-import org.jmeld.ui.util.ImageUtil;
-import org.jmeld.util.StringUtil;
-import org.jmeld.util.conf.ConfigurationListenerIF;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JViewport;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.border.Border;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
@@ -41,27 +42,54 @@ import javax.swing.text.Document;
 import javax.swing.text.Highlighter;
 import javax.swing.text.PlainDocument;
 
-import java.awt.*;
-import java.awt.event.*;
+import org.jmeld.diff.JMChunk;
+import org.jmeld.diff.JMDelta;
+import org.jmeld.diff.JMRevision;
+import org.jmeld.settings.JMeldSettings;
+import org.jmeld.ui.search.SearchCommand;
+import org.jmeld.ui.search.SearchHit;
+import org.jmeld.ui.search.SearchHits;
+import org.jmeld.ui.swing.DiffLabel;
+import org.jmeld.ui.swing.JMHighlightPainter;
+import org.jmeld.ui.swing.JMHighlighter;
+import org.jmeld.ui.swing.LeftScrollPaneLayout;
+import org.jmeld.ui.swing.LineNumberBorder;
+import org.jmeld.ui.text.BufferDocumentChangeListenerIF;
+import org.jmeld.ui.text.BufferDocumentIF;
+import org.jmeld.ui.text.JMDocumentEvent;
+import org.jmeld.ui.util.FontUtil;
+import org.jmeld.ui.util.ImageUtil;
+import org.jmeld.util.StringUtil;
+import org.jmeld.util.conf.ConfigurationListenerIF;
 
+/**
+ * Though this object is not a Component/JComponent, it does effectively serve as the container
+ * for a single file's Diff JPanel.
+ * 
+ * @author jmeld-legacy
+ *
+ */
+@SuppressWarnings({"rawtypes","unchecked"})
 public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationListenerIF {
+    
     private static final int MAXSIZE_CHANGE_DIFF = 1000;
 
-    private BufferDiffPanel diffPanel;
-    private String name;
     private int position;
+    private Timer timer;
+    private String name;
+    private boolean selected;
+    
     private DiffLabel fileLabel;
+    private BufferDiffPanel diffPanel;
+    private BufferDocumentIF bufferDocument;
     private JComboBox fileBox;
     private JScrollPane scrollPane;
     private JTextArea editor;
-    private BufferDocumentIF bufferDocument;
     private JButton saveButton;
-    private Timer timer;
     private SearchHits searchHits;
-    private boolean selected;
     private FilePanelBar filePanelBar;
 
-    FilePanel(BufferDiffPanel diffPanel, String name, int position) {
+    public FilePanel(BufferDiffPanel diffPanel, String name, int position) {
         this.diffPanel = diffPanel;
         this.name = name;
         this.position = position;
@@ -70,32 +98,29 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
     }
 
     private void init() {
-        ImageIcon icon;
 
-        editor = new JTextArea();
+        editor = new JTextArea(); // TODO replace with RSyntaxTextArea
         editor.setDragEnabled(true);
         editor.setHighlighter(new JMHighlighter());
 
         editor.addFocusListener(getFocusListener());
         editor.addCaretListener(getCaretListener());
-        DefaultContextMenu contextMenu = new DefaultContextMenu();
+        
+        final DefaultContextMenu contextMenu = new DefaultContextMenu();
         contextMenu.add(editor);
 
-
         scrollPane = new JScrollPane(editor);
-//        scrollPane.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
-        scrollPane.getViewport().setScrollMode(JViewport.BLIT_SCROLL_MODE);
+        scrollPane.getViewport().setScrollMode(JViewport.BLIT_SCROLL_MODE); // (JViewport.SIMPLE_SCROLL_MODE);
         if (BufferDocumentIF.ORIGINAL.equals(name)) {
+
             // Dirty trick to have the scrollbar on the other side!
-            LeftScrollPaneLayout layout;
-            layout = new LeftScrollPaneLayout();
+            LeftScrollPaneLayout layout = new LeftScrollPaneLayout();
             scrollPane.setLayout(layout);
             layout.syncWithScrollPane(scrollPane);
 
-            // Normally the leftside is not painted of a scrollbar that is
-            //   NOT freestanding.
-            scrollPane.getVerticalScrollBar().putClientProperty(
-                    "JScrollBar.isFreeStanding", Boolean.TRUE);
+            // Normally the leftside is not painted as a scrollbar that is NOT freestanding.
+            scrollPane.getVerticalScrollBar().putClientProperty("JScrollBar.isFreeStanding", Boolean.TRUE);
+            
         }
 
         fileBox = new JComboBox();
@@ -106,7 +131,8 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
         saveButton = new JButton();
         saveButton.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         saveButton.setContentAreaFilled(false);
-        icon = ImageUtil.getSmallImageIcon("stock_save");
+
+        final ImageIcon icon = ImageUtil.getSmallImageIcon("stock_save");
         saveButton.setIcon(icon);
         saveButton.setDisabledIcon(ImageUtil.createTransparentIcon(icon));
         saveButton.addActionListener(getSaveButtonAction());
@@ -179,7 +205,6 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
             fileName = bufferDocument.getName();
             fileBox.addItem(fileName);
             fileBox.setSelectedItem(fileName);
-
             fileLabel.setText(fileName);
 
             checkActions();
@@ -217,7 +242,7 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
         String searchText;
         SearchHit searchHit;
         int offset;
-        int length;
+        // int length;
         SearchCommand searchCommand;
 
         searchCommand = diffPanel.getSearchCommand();
@@ -259,11 +284,9 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
     }
 
     void setShowLineNumbers(boolean showLineNumbers) {
-        Border originalBorder;
-        String propertyName;
-
-        propertyName = "JMeld.originalBorder";
-        originalBorder = (Border) editor.getClientProperty(propertyName);
+        
+        String propertyName = "JMeld.originalBorder";
+        Border originalBorder = (Border) editor.getClientProperty(propertyName);
 
         if (showLineNumbers) {
             if (originalBorder == null) {
@@ -279,18 +302,17 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
         }
     }
 
-    SearchHits getSearchHits() {
+    public SearchHits getSearchHits() {
         return searchHits;
     }
 
     public void reDisplay() {
-        getHighlighter().setDoNotRepaint(true);
-
-        removeHighlights();
-        paintSearchHighlights();
-        paintRevisionHighlights();
-
+        getHighlighter().setDoNotRepaint(true);    
+            removeHighlights();
+            paintSearchHighlights();
+            paintRevisionHighlights();
         getHighlighter().setDoNotRepaint(false);
+        
         getHighlighter().repaint();
     }
 
@@ -594,24 +616,21 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
     }
 
     private void initConfiguration() {
-        JMeldSettings settings;
-        boolean readonly;
-        Font font;
-        FontMetrics fm;
 
-        settings = getConfiguration();
+        final JMeldSettings settings = getConfiguration();
 
         setShowLineNumbers(settings.getEditor().getShowLineNumbers());
 
-        font = settings.getEditor().isCustomFontEnabled() ? settings.getEditor().getFont() : null;
+        Font font = settings.getEditor().isCustomFontEnabled() ? settings.getEditor().getFont() : null;
         font = font != null ? font : FontUtil.defaultTextAreaFont;
         editor.setFont(font);
-        fm = editor.getFontMetrics(font);
+
+        FontMetrics fm = editor.getFontMetrics(font);
         scrollPane.getHorizontalScrollBar().setUnitIncrement(fm.getHeight());
 
         getEditor().setTabSize(settings.getEditor().getTabSize());
 
-        readonly = false;
+        boolean readonly = false;
         if (position == BufferDiffPanel.LEFT) {
             readonly = settings.getEditor().getLeftsideReadonly();
         } else if (position == BufferDiffPanel.RIGHT) {
@@ -632,4 +651,5 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
     public String getSelectedText() {
         return editor.getSelectedText();
     }
+    
 }

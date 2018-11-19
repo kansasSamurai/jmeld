@@ -1,17 +1,32 @@
 /*
    JMeld is a visual diff and merge tool.
-   Copyright (C) 2007  Kees Kuip
+   
+   -----
+   Copyright (C) 2018  Rick Wellman
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
  */
 package org.jmeld.diff;
@@ -136,7 +151,7 @@ public class EclipseDiff extends AbstractJMDiffAlgorithm {
                     return left.equals(right);
                 }
                 
-                String segment = left.substring(0,4);
+                final String segment = left.substring(0,4);
                 switch (segment) {
                 case "HEAD":
                 case "CUST":
@@ -145,9 +160,11 @@ public class EclipseDiff extends AbstractJMDiffAlgorithm {
                 case "GENE":
                 case "DEPO":
                 case "FUND":
+                case "RECO":
                 case "LOCK":
                 case "INFO":
                 case "AMT2":
+                case "AMT4":
                 case "SAMT":
                     if ( right.startsWith(segment) ) 
                         return compareStatementStrings(segment, left, right); // true;
@@ -182,7 +199,9 @@ public class EclipseDiff extends AbstractJMDiffAlgorithm {
                         case 0: // HEAD
                         case 1: // 
                         case 5: //
-                            if ( ! larray[i].equals(rarray[i]) ) return false;
+                        case 6: //
+                            if ( ! larray[i].equals(rarray[i]) ) 
+                                return false; // keep this on a separate line for debugging
                             break;
                         default:
                             // do nothing; i.e. ignore differences in these fields
@@ -213,6 +232,13 @@ public class EclipseDiff extends AbstractJMDiffAlgorithm {
                         } else {
                             left = larray[i].replace("+", "").replace("-", "").replace(",", "");
                             right = rarray[i].replace("+", "").replace("-", "").replace(",", "");
+                            
+                            // TODO 4th column does not always have a value... for now just return true.
+                            // This will have to be improved if we enable the checks below.
+                            if (left.equals("") || right.equals("")) {
+                                return true;
+                            }
+                            
                             final BigDecimal lvalue = new BigDecimal(left).multiply(ONE_HUNDRED);
                             final BigDecimal rvalue = new BigDecimal(right).multiply(ONE_HUNDRED);
                             final int delta =  Math.abs( lvalue.subtract(rvalue).intValue() );
@@ -224,14 +250,25 @@ public class EclipseDiff extends AbstractJMDiffAlgorithm {
                             return true; // for now... all deltas of value are to be ignored
                         }
                     }
-                    break;
+                    return false; // break; < unnecessary
                 case "SAMT":
-                case "AMT2":
                     counterSAMT++;
                     return true; // break; < unnecessary
+                case "AMT2":
+                case "AMT4":
+                    for (int i=0; i < larray.length; i++) {
+                        if (i < 2) {
+                            if ( ! larray[i].equals(rarray[i]) ) return false;
+                        } else {
+                            // If we get this far, the "prefix" is the same; ignore the rest by returning true.
+                            return true; 
+                        }
+                    }
+                    break;
                 case "GENE":
                 case "DEPO":
                 case "FUND":
+                case "RECO":
                 case "LOCK":
                 case "INFO":
                     for (int i=0; i < larray.length; i++) {
@@ -244,6 +281,9 @@ public class EclipseDiff extends AbstractJMDiffAlgorithm {
                     }
                     break;
                 default:
+                    System.out.println("Something not accounted for...");
+                    System.out.println("...  left: " + left);
+                    System.out.println("\r\n... right: " + right);
                     return left.equals(right);
                 }
 
@@ -263,7 +303,7 @@ public class EclipseDiff extends AbstractJMDiffAlgorithm {
  // ======================= TSS Customization ==========================
     private int counterCSTM; private int[] deltaCSTM = { 0, 0, 0, 0, 0 };
     private int counterSAMT;
-    private int valueindex = 4; // just here so that I can change at debug time if necessary
+    private int valueindex = 3; // just here so that I can change at debug time if necessary
     private int segmentindex = 4;
     private final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 

@@ -16,116 +16,128 @@
  */
 package org.jmeld.ui.swing;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+
+import javax.swing.JTextArea;
+import javax.swing.border.EmptyBorder;
+
 import org.jmeld.settings.JMeldSettings;
 import org.jmeld.ui.FilePanel;
 import org.jmeld.ui.util.ColorUtil;
 import org.jmeld.ui.util.Colors;
 
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
+/**
+ * Line Number Component that decorates a FilePanel.
+ * 
+ * TODO Investigate better looking/performing alternatives
+ * 
+ * @author jmeld-legacy
+ *
+ */
+@SuppressWarnings("serial")
+public class LineNumberBorder extends EmptyBorder {
+    
+    private FilePanel filePanel;
+    private Color background;
+    private Color lineColor;
+    private Font font;
+    private int fontWidth;
+    private int fontHeight;
+    protected boolean enableBlame = true;
 
-public class LineNumberBorder
-    extends EmptyBorder
-{
-  private static int MARGIN = 4;
-  private FilePanel filePanel;
-  private Color background;
-  private Color lineColor;
-  private Font font;
-  private int fontWidth;
-  private int fontHeight;
-  private boolean enableBlame = true;
+    private static int MARGIN = 4;
+    
+    public LineNumberBorder(FilePanel filePanel) {
+        super(0, 40 + MARGIN, 0, 0);
 
-  public LineNumberBorder(FilePanel filePanel)
-  {
-    super(0, 40 + MARGIN, 0, 0);
+        this.filePanel = filePanel;
 
-    this.filePanel = filePanel;
-
-    init();
-  }
-
-  public void enableBlame(boolean enableBlame)
-  {
-    this.enableBlame = enableBlame;
-  }
-
-  private void init()
-  {
-    FontMetrics fm;
-    Color baseColor;
-
-    baseColor = Colors.getPanelBackground();
-    lineColor = ColorUtil.darker(baseColor);
-    background = ColorUtil.brighter(baseColor);
-    font = new Font("Monospaced", Font.PLAIN, 10);
-
-    fm = filePanel.getEditor().getFontMetrics(font);
-    fontWidth = fm.stringWidth("0");
-    fontHeight = fm.getHeight();
-  }
-
-  public void paintBefore(Graphics g)
-  {
-    Rectangle clip;
-
-    clip = g.getClipBounds();
-
-    g.setColor(background);
-    g.fillRect(0, clip.y, left - MARGIN, clip.y + clip.height);
-  }
-
-  public void paintAfter(Graphics g, int startOffset, int endOffset)
-  {
-    Rectangle clip;
-    int startLine;
-    int endLine;
-    int y;
-    int lineHeight;
-    String s;
-    int heightCorrection;
-    Rectangle r1;
-    JTextArea textArea;
-    Graphics2D g2;
-
-    g2 = (Graphics2D) g;
-
-    clip = g.getClipBounds();
-
-    try
-    {
-      textArea = filePanel.getEditor();
-      startLine = textArea.getLineOfOffset(startOffset);
-      endLine = textArea.getLineOfOffset(endOffset);
-      r1 = textArea.modelToView(startOffset);
-      y = r1.y;
-      lineHeight = r1.height;
-      heightCorrection = (lineHeight - fontHeight) / 2;
-
-      g.setColor(lineColor);
-      g.drawLine(left - MARGIN, clip.y, left - MARGIN, clip.y + clip.height);
-
-      if (JMeldSettings.getInstance().getEditor().isAntialiasEnabled())
-        ;
-      {
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-          RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-      }
-
-      g.setFont(font);
-      g.setColor(Color.black);
-      for (int line = startLine; line <= endLine; line++)
-      {
-        y += lineHeight;
-        s = Integer.toString(line + 1);
-        g.drawString(s, left - (fontWidth * s.length()) - 1 - MARGIN,
-          y - heightCorrection);
-      }
+        init();
     }
-    catch (Exception ex)
-    {
-      ex.printStackTrace();
+
+    public void enableBlame(boolean enableBlame) {
+        this.enableBlame = enableBlame;
     }
-  }
+
+    private void init() {
+
+        // TODO This approach bases colors on current L&F; I disagree with this approach. 
+        // The document pane(s) should default to a fixed styling; if the user wants his
+        // own styling, it can be customized in settings.
+        boolean oldschool = false;
+        if (oldschool) {
+            final Color baseColor = Colors.getPanelBackground();
+            lineColor = ColorUtil.darker(baseColor);
+            background = ColorUtil.brighter(baseColor);            
+        } else {
+            lineColor = Color.black; // ColorUtil.darker(baseColor);
+            background = new Color(0xCDCDCD); // ColorUtil.brighter(baseColor);            
+        }
+        
+        // TODO commit this; uses same font as document settings; worst case default to system "monospaced" at 10pt
+        // font = new Font("Monospaced", Font.PLAIN, 10);
+        final JMeldSettings settings = JMeldSettings.getInstance();
+        font = settings.getEditor().isCustomFontEnabled() ? settings.getEditor().getFont() : null;
+        if (font != null) {
+            font = font.deriveFont(.8f * font.getSize());
+        } else {
+            // worst case default to system "monospaced" at 10pt
+            font = new Font("Monospaced", Font.PLAIN, 10);            
+        }
+
+        final FontMetrics fm = filePanel.getEditor().getFontMetrics(font);
+        fontWidth = fm.stringWidth("0");
+        fontHeight = fm.getHeight();
+    }
+
+    // TODO this should be part of an interface to show its relationship to JMHighlighter
+    public void paintBefore(Graphics g) {
+        Rectangle clip = g.getClipBounds();
+        g.setColor(background);
+        g.fillRect(0, clip.y, left - MARGIN, clip.y + clip.height);
+    }
+
+    // TODO this should be part of an interface to show its relationship to JMHighlighter
+    public void paintAfter(Graphics g, int startOffset, int endOffset) {
+        final Graphics2D g2 = (Graphics2D) g;
+        final Rectangle clip = g.getClipBounds();
+        final JTextArea textArea = filePanel.getEditor();
+
+        try {
+            final int startLine = textArea.getLineOfOffset(startOffset);
+            final int endLine = textArea.getLineOfOffset(endOffset);
+            
+            int heightCorrection;
+            final Rectangle r1 = textArea.modelToView(startOffset);
+            final int lineHeight = r1.height;
+            heightCorrection = (lineHeight - fontHeight) / 2;
+            heightCorrection += 5; // TODO this is new and hacked; figure out a better solution for correcting the baseline
+
+            g.setColor(lineColor);
+            g.drawLine(left - MARGIN, clip.y, left - MARGIN, clip.y + clip.height);
+
+            if (JMeldSettings.getInstance().getEditor().isAntialiasEnabled()) {
+                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            }
+
+            g.setFont(font);
+            g.setColor(Color.black);
+            int y = r1.y;
+            for (int line = startLine; line <= endLine; line++) {
+                y += lineHeight;
+                
+                final String nn = Integer.toString(line + 1);
+                g.drawString(nn, left - (fontWidth * nn.length()) - 1 - MARGIN, y - heightCorrection);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    
 }

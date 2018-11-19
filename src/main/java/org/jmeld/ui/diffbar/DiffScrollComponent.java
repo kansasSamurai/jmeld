@@ -16,10 +16,38 @@ package org.jmeld.ui.diffbar;
    Boston, MA  02110-1301  USA
  */
 
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Polygon;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Shape;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
+import java.awt.geom.CubicCurve2D;
+import java.awt.geom.GeneralPath;
+import java.awt.geom.Line2D;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.JComponent;
+import javax.swing.JViewport;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.JTextComponent;
+
 import org.jmeld.diff.JMChunk;
 import org.jmeld.diff.JMDelta;
 import org.jmeld.diff.JMRevision;
-import org.jmeld.diff.TypeDiff;
 import org.jmeld.settings.EditorSettings;
 import org.jmeld.settings.JMeldSettings;
 import org.jmeld.ui.BufferDiffPanel;
@@ -28,33 +56,28 @@ import org.jmeld.ui.text.BufferDocumentIF;
 import org.jmeld.ui.util.RevisionUtil;
 import org.jmeld.util.conf.ConfigurationListenerIF;
 
-import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.JTextComponent;
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.geom.CubicCurve2D;
-import java.awt.geom.GeneralPath;
-import java.awt.geom.Line2D;
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * 
+ * @author jmeld-legacy
+ *
+ */
+@SuppressWarnings("serial")
 public class DiffScrollComponent extends JComponent implements ChangeListener, ConfigurationListenerIF {
+    
     private BufferDiffPanel diffPanel;
+    private List<Command> commands;
     private int fromPanelIndex;
     private int toPanelIndex;
-    private List<Command> commands;
-    private Object antiAlias;
+    private boolean shift; // state of the Shift key; true = pressed, false = released
     private boolean leftsideReadonly;
     private boolean rightsideReadonly;
+    private boolean drawCurves;
     private int curveType;
 
-    private boolean drawCurves;
+    private Object antiAlias;
 
-    public DiffScrollComponent(BufferDiffPanel diffPanel, int fromPanelIndex,
-                               int toPanelIndex) {
+    public DiffScrollComponent(BufferDiffPanel diffPanel, int fromPanelIndex, int toPanelIndex) {
+        
         this.diffPanel = diffPanel;
         this.fromPanelIndex = fromPanelIndex;
         this.toPanelIndex = toPanelIndex;
@@ -71,15 +94,13 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
         initSettings();
     }
 
-    public void setCurveType(int curveType) {
+    private void setCurveType(int curveType) {
         this.curveType = curveType;
     }
 
-    public int getCurveType() {
+    private int getCurveType() {
         return curveType;
     }
-
-    boolean shift;
 
     public void setShift(boolean shift) {
         this.shift = shift;
@@ -115,15 +136,13 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
     }
 
     private void initSettings() {
-        JMeldSettings settings = JMeldSettings.getInstance();
-        EditorSettings editorSettings;
-
-        editorSettings = settings.getEditor();
-
-        leftsideReadonly = editorSettings.getLeftsideReadonly();
-        rightsideReadonly = editorSettings.getRightsideReadonly();
+        final JMeldSettings settings = JMeldSettings.getInstance();
         setDrawCurves(settings.getDrawCurves());
         setCurveType(settings.getCurveType());
+
+        final EditorSettings editorSettings = settings.getEditor();
+        leftsideReadonly = editorSettings.getLeftsideReadonly();
+        rightsideReadonly = editorSettings.getRightsideReadonly();
     }
 
     public void stateChanged(ChangeEvent event) {
@@ -153,6 +172,8 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                 int offmask = MouseEvent.CTRL_DOWN_MASK;
                 //TODO: Se debe pintar antes una flecha sobre o debajo del cambio para entender que se añadira arriba
                 //o abajo y deben desaparecer los de borrar
+                // >> An arrow must be painted above or below the change to understand that it will be added up 
+                // or down and those of clearing must disappear
                 boolean shift = false;
                 if ((me.getModifiersEx() & (onmask | offmask)) == onmask) {
                     shift = true;
@@ -179,19 +200,16 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
 
     @Override
     public void paintComponent(Graphics g) {
-        Rectangle r;
-        int middle;
-        Graphics2D g2;
+        final Rectangle r = g.getClipBounds();
 
-        g2 = (Graphics2D) g;
-
-        r = g.getClipBounds();
+        final Graphics2D g2 = (Graphics2D) g;
         g2.setColor(getBackground());
         g2.fill(r);
 
-        middle = r.height / 2;
         g2.setColor(Color.LIGHT_GRAY);
-        Stroke oldStroke = g2.getStroke();
+
+//        int middle = r.height / 2;
+//        Stroke oldStroke = g2.getStroke();
 //    g2.setStroke(new BasicStroke(3.0f, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_ROUND, 10.0f, null, 0.0f));
 //        g2.drawLine(r.x + 20, r.y + middle, r.x + r.width - 20, r.y + middle);
 //    g2.setStroke(oldStroke);
@@ -200,22 +218,22 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
     }
 
     private void paintDiffs(Graphics2D g2) {
-        JViewport viewportFrom;
-        JViewport viewportTo;
-        JTextComponent editorFrom;
-        JTextComponent editorTo;
+
         JMRevision revision;
-        BufferDocumentIF bdFrom;
-        BufferDocumentIF bdTo;
+        
+        // Reusable object references
+        Rectangle r;
+        Point p;
+        Color color;
+        Color darkerColor;
+        Polygon shape;
+        Rectangle rect;
+
         int firstLineFrom;
         int lastLineFrom;
         int firstLineTo;
         int lastLineTo;
         int offset;
-        Rectangle r;
-        Point p;
-        JMChunk original;
-        JMChunk revised;
         Rectangle viewportRect;
         Rectangle fromRect;
         Rectangle toRect;
@@ -225,38 +243,26 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
         int y;
         int width;
         int height;
-        Rectangle bounds;
         int x0;
         int y0;
         int x1;
         int y1;
-        Color color;
-        Color darkerColor;
-        Polygon shape;
-        Rectangle rect;
-        boolean selected;
         int selectionWidth;
-        FilePanel fromPanel;
-        FilePanel toPanel;
 
-        bounds = g2.getClipBounds();
-        g2.setClip(null);
-
+        // Short circuit; don't bother if current revision is null
         revision = diffPanel.getCurrentRevision();
         if (revision == null) {
             return;
         }
 
-        commands = new ArrayList<Command>();
-
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        antiAlias = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        commands = new ArrayList<Command>(); // reset the commands        
+        this.setAntiAlias(g2); // remember to later call this.resetAntiAlias(g2)
 
         // From side:
-        fromPanel = getFromPanel();
-        viewportFrom = fromPanel.getScrollPane().getViewport();
-        editorFrom = fromPanel.getEditor();
-        bdFrom = fromPanel.getBufferDocument();
+        final FilePanel fromPanel = getFromPanel();
+        final JViewport viewportFrom = fromPanel.getScrollPane().getViewport();
+        final JTextComponent editorFrom = fromPanel.getEditor();
+        final BufferDocumentIF bdFrom = fromPanel.getBufferDocument();
         if (bdFrom == null) {
             return;
         }
@@ -271,14 +277,14 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
         // Calculate lastLine shown of the first document.
         p = new Point(r.x, r.y + r.height);
         offset = editorFrom.viewToModel(p);
-        bdFrom = fromPanel.getBufferDocument();
+        // bdFrom = fromPanel.getBufferDocument(); // this looks like a mistake... commenting it out since it is a duplicate from line above
         lastLineFrom = bdFrom.getLineForOffset(offset) + 1;
 
         // To side:
-        toPanel = getToPanel();
-        viewportTo = toPanel.getScrollPane().getViewport();
-        editorTo = toPanel.getEditor();
-        bdTo = toPanel.getBufferDocument();
+        final FilePanel toPanel = getToPanel();
+        final JViewport viewportTo = toPanel.getScrollPane().getViewport();
+        final JTextComponent editorTo = toPanel.getEditor();
+        final BufferDocumentIF bdTo = toPanel.getBufferDocument();
         if (bdTo == null) {
             return;
         }
@@ -298,22 +304,22 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
         try {
             // Draw only the delta's that have some line's drawn in one of the viewports.
             for (JMDelta delta : revision.getDeltas()) {
-                original = delta.getOriginal();
-                revised = delta.getRevised();
+                final JMChunk original = delta.getOriginal();
+                final JMChunk revised = delta.getRevised();
 
                 // This delta is before the firstLine of the screen: Keep on searching!
-                if (original.getAnchor() + original.getSize() < firstLineFrom
-                        && revised.getAnchor() + revised.getSize() < firstLineTo) {
+                if (    original.getAnchor() + original.getSize() < firstLineFrom
+                     && revised.getAnchor()  + revised.getSize() < firstLineTo) {
                     continue;
                 }
 
                 // This delta is after the lastLine of the screen: stop!
-                if (original.getAnchor() > lastLineFrom
-                        && revised.getAnchor() > lastLineTo) {
+                if (    original.getAnchor() > lastLineFrom
+                     && revised.getAnchor()  > lastLineTo) {
                     break;
                 }
 
-                selected = (delta == diffPanel.getSelectedDelta());
+                final boolean selected = (delta == diffPanel.getSelectedDelta());
 
                 // OK, this delta has some visible lines. Now draw it!
                 color = RevisionUtil.getColor(delta);
@@ -403,6 +409,8 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                 }
                 toRect = editorTo.modelToView(offset);
 
+                Rectangle bounds = g2.getClipBounds();
+//              g2.setClip(null); <<< commenting this out fixes a bug; commit this!
                 x = bounds.x + bounds.width - 10;
                 y = fromRect.y - viewportRect.y + 1;
                 y = y < 0 ? 0 : y;
@@ -433,36 +441,38 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                     int curveX3 = x + width;
                     int curveY3 = y + (height > 0 ? height : 0);
 
-                    GeneralPath curve = new GeneralPath();
+                    final GeneralPath curve = new GeneralPath();
                     if (getCurveType() == 0) {
-                        curve.append(new Line2D.Float(curveX4, curveY4, curveX1, curveY1),
-                                true);
-                        curve.append(new Line2D.Float(curveX2, curveY2, curveX3, curveY3),
-                                true);
+                        curve.append(new Line2D.Float(curveX4, curveY4, curveX1, curveY1), true);
+                        curve.append(new Line2D.Float(curveX2, curveY2, curveX3, curveY3), true);
                     } else if (getCurveType() == 1) {
                         int posyOrg = original.getSize() > 0 ? 0 : 1;
                         int posyRev = revised.getSize() > 0 ? 0 : 1;
-                        curve.append(new CubicCurve2D.Float(curveX1, curveY1 - posyOrg
+                        curve.append(new CubicCurve2D.Float(
+                                  curveX1, curveY1 - posyOrg
                                 , curveX1 + ((curveX2 - curveX1) / 2) + 5, curveY1
                                 , curveX1 + ((curveX2 - curveX1) / 2) + 5, curveY2
                                 , curveX2, curveY2 - posyRev)
                                 , true);
-                        int addHeightCorrection = 0;
+//                        int addHeightCorrection = 0;
 //                        if (delta.getType() == TypeDiff.ADD) {
 //                            addHeightCorrection = 15;
 //                        }
-                        curve.append(new CubicCurve2D.Float(curveX3, curveY3 + posyRev/* - addHeightCorrection*/
+                        curve.append(new CubicCurve2D.Float(
+                                  curveX3, curveY3 + posyRev /* - addHeightCorrection*/
                                 , curveX3 + ((curveX4 - curveX3) / 2) - 5, curveY3 /*- addHeightCorrection*/
                                 , curveX3 + ((curveX4 - curveX3) / 2) - 5, curveY4
                                 , curveX4, curveY4 + posyOrg)
                                 , true);
                     } else if (getCurveType() == 2) {
-                        curve.append(new CubicCurve2D.Float(curveX1, curveY1 - 2
+                        curve.append(new CubicCurve2D.Float(
+                                  curveX1, curveY1 - 2
                                 , curveX2 + 10, curveY1
                                 , curveX1 + 10, curveY2
                                 , curveX2, curveY2 - 2)
                                 , true);
-                        curve.append(new CubicCurve2D.Float(curveX3, curveY3 + 2
+                        curve.append(new CubicCurve2D.Float(
+                                  curveX3, curveY3 + 2
                                 , curveX4 - 10, curveY3
                                 , curveX3 - 10, curveY4
                                 , curveX4, curveY4 + 2)
@@ -487,8 +497,8 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                         g2.drawLine(x, y, x, y + height);
                     }
 
-                    //x = x + width + 1;
-
+                    x = x + width + 1; // This was originally commented out?
+                    
                     g2.setColor(darkerColor);
                     g2.drawLine(x0, y0, x0 + 15, y0);
                     setAntiAlias(g2);
@@ -524,6 +534,7 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
 
                 boolean drawCommandPointers = true;
                 if(drawCommandPointers) {
+                    
                     // Draw merge right->left command.
                     if (!leftsideReadonly && !bdFrom.isReadonly()) {
                         if (!shift || revised.getSize() > 0) {
@@ -534,8 +545,7 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                             g2.setColor(shift ? Color.black : darkerColor);
                             g2.draw(shape);
                             resetAntiAlias(g2);
-                            commands.add(new DiffChangeCommand(shape, delta, toPanelIndex,
-                                    fromPanelIndex));
+                            commands.add(new DiffChangeCommand(shape, delta, toPanelIndex, fromPanelIndex));
                         }
 
                         // Draw delete right command
@@ -544,8 +554,7 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                             g2.drawLine(x0 + 3 - width, y0 + 3, x0 + 7 - width, y0 + 7);
                             g2.drawLine(x0 + 7 - width, y0 + 3, x0 + 3 - width, y0 + 7);
                             rect = new Rectangle(x0 + 2 - width, y0 + 2, 6, 6);
-                            commands.add(new DiffDeleteCommand(rect, delta, fromPanelIndex,
-                                    toPanelIndex));
+                            commands.add(new DiffDeleteCommand(rect, delta, fromPanelIndex, toPanelIndex));
                         }
                     }
 
@@ -559,8 +568,7 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                             g2.setColor(shift ? Color.black : darkerColor);
                             g2.drawPolygon(shape);
                             resetAntiAlias(g2);
-                            commands.add(new DiffChangeCommand(shape, delta, fromPanelIndex,
-                                    toPanelIndex));
+                            commands.add(new DiffChangeCommand(shape, delta, fromPanelIndex, toPanelIndex));
                         }
 
                         // Draw delete right command
@@ -569,8 +577,7 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                             g2.drawLine(x1 + 3, y1 + 3, x1 + 7, y1 + 7);
                             g2.drawLine(x1 + 7, y1 + 3, x1 + 3, y1 + 7);
                             rect = new Rectangle(x1 + 2, y1 + 2, 6, 6);
-                            commands.add(new DiffDeleteCommand(rect, delta, toPanelIndex,
-                                    fromPanelIndex));
+                            commands.add(new DiffDeleteCommand(rect, delta, toPanelIndex, fromPanelIndex));
                         }
                     }
                 }
@@ -583,18 +590,20 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
     }
 
     private Polygon createTriangle(int x, int y, boolean toLeft) {
-        Polygon shape;
-        shape = new Polygon();
+        final Polygon shape = new Polygon();
+        
         int posx = 10;
         shape.addPoint(x + (toLeft ? -posx : posx), y);
+        
         posx -= 11;
         shape.addPoint(x + (toLeft ? -posx : posx), y + - 4);
         shape.addPoint(x + (toLeft ? -posx : posx), y + + 4);
+        
         return shape;
     }
 
-    class DiffChangeCommand
-            extends Command {
+    class DiffChangeCommand extends Command {
+        
         DiffChangeCommand(Shape shape, JMDelta delta, int fromIndex, int toIndex) {
             super(shape, delta, fromIndex, toIndex);
         }
@@ -606,8 +615,8 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
         }
     }
 
-    class DiffDeleteCommand
-            extends Command {
+    class DiffDeleteCommand extends Command {
+        
         DiffDeleteCommand(Shape shape, JMDelta delta, int fromIndex, int toIndex) {
             super(shape, delta, fromIndex, toIndex);
         }
@@ -615,14 +624,16 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
         @Override
         public void execute(boolean shift) {
             diffPanel.setSelectedDelta(delta);
-            if (!shift) { //TODO: Con shift no se debería ni ver
+            if (!shift) { //TODO: Con shift no se debería ni ver ((With shift you should not see))
                 diffPanel.runDelete(fromIndex, toIndex);
             }
         }
+        
     }
 
-    //TODO: Hay que hacer un diff add command (AddUpper, AddLower)
+    // TODO  make add command(s) (AddUpper, AddLower)
     abstract class Command {
+        
         Rectangle bounds;
         JMDelta delta;
         int fromIndex;
@@ -640,12 +651,26 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
         }
 
         public abstract void execute(boolean shift);
+        
     }
 
+    /**
+     * Convenience method to set RenderingHints.KEY_ANTIALIASING to RenderingHints.VALUE_ANTIALIAS_ON.
+     * Stores previous/current setting in private variable 'antiAlias';
+     * you need to call resetAntiAlias() at some point to restore the setting.
+     * 
+     * @param g2
+     */
     private void setAntiAlias(Graphics2D g2) {
+        antiAlias = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
     }
 
+    /**
+     * Convenience method to reset the anti aliasing value
+     * 
+     * @param g2
+     */
     private void resetAntiAlias(Graphics2D g2) {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, antiAlias);
     }
@@ -657,4 +682,5 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
     private FilePanel getToPanel() {
         return diffPanel.getFilePanel(toPanelIndex);
     }
+    
 }

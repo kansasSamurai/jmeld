@@ -16,52 +16,55 @@
  */
 package org.jmeld.ui.util;
 
+import java.awt.Color;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jmeld.diff.JMDelta;
 import org.jmeld.settings.EditorSettings;
 import org.jmeld.settings.JMeldSettings;
 
-import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
+/**
+ * 
+ * @author jmeld-legacy
+ *
+ */
+public class RevisionUtil {
+    
+    // A "cache" for the darker colors to prevent recompute time
+    private static Map<Color, Color> DARKER_MAP = new HashMap<Color, Color>();
 
-public class RevisionUtil
-{
-  private static Map<Color, Color> darker = new HashMap<Color, Color>();
+    public static Color getColor(JMDelta delta) {
+        
+        if (delta.isDelete()) {
+            return getSettings().getDeletedColor();
+        }
 
-  public static Color getColor(JMDelta delta)
-  {
-    if (delta.isDelete())
-    {
-      return getSettings().getDeletedColor();
+        if (delta.isChange()) {
+            return getSettings().getChangedColor();
+        }
+
+        return getSettings().getAddedColor();
     }
 
-    if (delta.isChange())
-    {
-      return getSettings().getChangedColor();
+    public static Color getDarkerColor(JMDelta delta) {
+
+        final Color c = getColor(delta);
+
+        // If found in the cache, then return the cached value. If not, compute/cache/return.
+        Color result = DARKER_MAP.get(c);
+        if (result == null) {
+//            result = c.darker().darker(); // .darker().darker().darker();
+//            result = new Color(result.getRed(), result.getGreen(), result.getBlue(), result.getAlpha() + 128);
+            result = new Color(8, 201, 136, 32); // <<< is this even being used? it does not look like it!
+            DARKER_MAP.put(c, result);
+        }
+
+        return result;
     }
 
-    return getSettings().getAddedColor();
-  }
-
-  public static Color getDarkerColor(JMDelta delta)
-  {
-    Color c;
-    Color result;
-
-    c = getColor(delta);
-
-    result = darker.get(c);
-    if (result == null)
-    {
-      result = c.darker();
-      darker.put(c, result);
+    static private EditorSettings getSettings() {
+        return JMeldSettings.getInstance().getEditor();
     }
-
-    return result;
-  }
-
-  static private EditorSettings getSettings()
-  {
-    return JMeldSettings.getInstance().getEditor();
-  }
+    
 }

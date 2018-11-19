@@ -1,7 +1,15 @@
 /*
    JMeld is a visual diff and merge tool.
    
-   Copyright (C) 2018  Rick Wellman - GNU LGPL   
+   -----
+   Copyright (C) 2018  Rick Wellman
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
    Copyright (C) 2007  Kees Kuip - GNU LGPL
    
    This library is free software; you can redistribute it and/or

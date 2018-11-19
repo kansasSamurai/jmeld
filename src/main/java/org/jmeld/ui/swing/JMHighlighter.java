@@ -16,15 +16,26 @@
  */
 package org.jmeld.ui.swing;
 
-import javax.swing.text.*;
-import java.awt.*;
+import java.awt.Graphics;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.Highlighter;
+import javax.swing.text.JTextComponent;
+import javax.swing.text.Position;
+
 /**
  * A highlighter that paints in layers.
+ * 
+ * @author jmeld-legacy
+ * 
  */
 public class JMHighlighter implements Highlighter {
 
@@ -61,25 +72,18 @@ public class JMHighlighter implements Highlighter {
      *
      * @param g the graphics context
      */
+    @Override
     public void paint(Graphics g) {
-        int upperLayer;
-        List<Highlighter.Highlight> list;
-        Rectangle a;
-        Insets insets;
-        Rectangle clip;
-        int startOffset;
-        int endOffset;
-        int lineHeight;
-        LineNumberBorder lineNumberBorder;
 
-        clip = g.getClipBounds();
-        lineHeight = component.getFontMetrics(component.getFont()).getHeight();
-        startOffset = component.viewToModel(new Point(clip.x - lineHeight, clip.y));
-        endOffset = component.viewToModel(new Point(clip.x, clip.y + clip.height
-                + lineHeight));
+        // int upperLayer;
+        Insets insets;
+        final Rectangle clip = g.getClipBounds();
+        final int lineHeight = component.getFontMetrics(component.getFont()).getHeight();
+        final int startOffset = component.viewToModel(new Point(clip.x - lineHeight, clip.y));
+        final int endOffset = component.viewToModel(new Point(clip.x, clip.y + clip.height + lineHeight));
 
         // Just some hacks to allow linenumbers painted in the emptyborder.
-        lineNumberBorder = null;
+        LineNumberBorder lineNumberBorder = null;
         if (component.getBorder() instanceof LineNumberBorder) {
             lineNumberBorder = (LineNumberBorder) component.getBorder();
         }
@@ -88,14 +92,12 @@ public class JMHighlighter implements Highlighter {
             lineNumberBorder.paintBefore(g);
         }
 
-        a = null;
+        Rectangle a = null;
         for (Integer layer : layers) {
-            list = highlights.get(layer);
+            final List<Highlighter.Highlight> list = highlights.get(layer);
             if (list == null) {
                 continue;
-            }
-
-            if (list.size() == 0) {
+            } else if (list.size() == 0) {
                 continue;
             }
 
@@ -110,13 +112,13 @@ public class JMHighlighter implements Highlighter {
 
             for (Highlighter.Highlight hli : list) {
                 // Don't paint highlighters that are not in sight!
-                if (hli.getStartOffset() > endOffset
-                        || hli.getEndOffset() < startOffset) {
+                if (    hli.getStartOffset() > endOffset
+                     || hli.getEndOffset() < startOffset) {
                     continue;
+                } else {
+                    hli.getPainter().paint(g, hli.getStartOffset(), hli.getEndOffset(), a, component);                    
                 }
 
-                hli.getPainter().paint(g, hli.getStartOffset(), hli.getEndOffset(), a,
-                        component);
             }
         }
 
@@ -125,24 +127,23 @@ public class JMHighlighter implements Highlighter {
         }
     }
 
+    @Override
     public void install(JTextComponent c) {
         component = c;
         removeAllHighlights();
     }
 
+    @Override
     public void deinstall(JTextComponent c) {
         component = null;
     }
 
-    public Object addHighlight(int p0, int p1,
-                               Highlighter.HighlightPainter painter)
-            throws BadLocationException {
+    @Override
+    public Object addHighlight(int p0, int p1, Highlighter.HighlightPainter painter) throws BadLocationException {
         return addHighlight(UPPER_LAYER, p0, p1, painter);
     }
 
-    public Object addHighlight(Integer layer, int p0, int p1,
-                               Highlighter.HighlightPainter painter)
-            throws BadLocationException {
+    public Object addHighlight(Integer layer, int p0, int p1, Highlighter.HighlightPainter painter) throws BadLocationException {
         Document doc;
         HighlightInfo hli;
 
@@ -159,6 +160,7 @@ public class JMHighlighter implements Highlighter {
         return hli;
     }
 
+    @Override
     public void removeHighlight(Object object) {
         removeHighlight(UPPER_LAYER, object);
     }
@@ -176,6 +178,7 @@ public class JMHighlighter implements Highlighter {
     /**
      * Removes all highlights.
      */
+    @Override
     public void removeAllHighlights() {
         for (Integer layer : layers) {
             getLayer(layer).clear();
@@ -183,6 +186,7 @@ public class JMHighlighter implements Highlighter {
         repaint();
     }
 
+    @Override
     public void changeHighlight(Object object, int p0, int p1)
             throws BadLocationException {
         changeHighlight(UPPER_LAYER, object, p0, p1);
@@ -203,12 +207,13 @@ public class JMHighlighter implements Highlighter {
     }
 
     /**
-     * Makes a copy of the highlights.  Does not actually clone each highlight,
-     * but only makes references to them.
+     * Makes a copy of the highlights.  
+     * Does not actually clone each highlight, but only makes references to them.
      *
      * @return the copy
      * @see Highlighter#getHighlights
      */
+    @Override
     public Highlighter.Highlight[] getHighlights() {
         int size;
         Highlighter.Highlight[] result;
@@ -251,22 +256,25 @@ public class JMHighlighter implements Highlighter {
         component.repaint();
     }
 
-    class HighlightInfo
-            implements Highlighter.Highlight {
+    class HighlightInfo implements Highlighter.Highlight {
         Position p0;
         Position p1;
         Highlighter.HighlightPainter painter;
 
+        @Override
         public int getStartOffset() {
             return p0.getOffset();
         }
 
+        @Override
         public int getEndOffset() {
             return p1.getOffset();
         }
 
+        @Override
         public Highlighter.HighlightPainter getPainter() {
             return painter;
         }
     }
+
 }

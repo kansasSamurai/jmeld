@@ -16,9 +16,34 @@
  */
 package org.jmeld.ui;
 
-import com.jgoodies.forms.layout.CellConstraints;
-import com.jgoodies.forms.layout.FormLayout;
-import com.jidesoft.swing.JideTabbedPane;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.help.HelpSet;
+import javax.help.JHelpContentViewer;
+import javax.help.JHelpNavigator;
+import javax.help.NavigatorView;
+import javax.swing.Icon;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.JSplitPane;
+import javax.swing.JToolBar;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
 import org.jmeld.Version;
 import org.jmeld.settings.JMeldSettings;
 import org.jmeld.ui.action.ActionHandler;
@@ -29,29 +54,30 @@ import org.jmeld.ui.search.SearchBarDialog;
 import org.jmeld.ui.search.SearchCommand;
 import org.jmeld.ui.search.SearchHits;
 import org.jmeld.ui.settings.SettingsPanel;
-import org.jmeld.ui.util.*;
+import org.jmeld.ui.util.ImageUtil;
+import org.jmeld.ui.util.SwingUtil;
+import org.jmeld.ui.util.TabIcon;
+import org.jmeld.ui.util.ToolBarBuilder;
+import org.jmeld.ui.util.WidgetFactory;
 import org.jmeld.util.ObjectUtil;
 import org.jmeld.util.StringUtil;
 import org.jmeld.util.conf.ConfigurationListenerIF;
 import org.jmeld.vc.VersionControlUtil;
 
-import javax.help.HelpSet;
-import javax.help.JHelpContentViewer;
-import javax.help.JHelpNavigator;
-import javax.help.NavigatorView;
-import javax.swing.*;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import java.awt.*;
-import java.awt.event.*;
-import java.io.File;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+import com.jgoodies.forms.layout.CellConstraints;
+import com.jgoodies.forms.layout.FormLayout;
+import com.jidesoft.swing.JideTabbedPane;
 
+/**
+ * This is the main user interface panel injected into the JFrame.
+ * I like to think of this class as the "DocumentManager" user interface.
+ * 
+ * @author jmeld-legacy
+ *
+ */
+@SuppressWarnings("serial")
 public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
+    
     public final Actions actions;
 
     // Options (enable/disable before adding this component to its container)
@@ -71,11 +97,16 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
     private boolean mergeMode;
     private boolean started;
 
+    /**
+     * No-args Constructor
+     */
     public JMeldPanel() {
+        
         setFocusable(true);
-
-        tabbedPane = new JideTabbedPane();
-        addAncestorListener(new AncestorListener() {
+        
+        this.tabbedPane = new JideTabbedPane();
+        
+        this.addAncestorListener(new AncestorListener() {
             public void ancestorAdded(AncestorEvent event) {
                 start();
             }
@@ -86,12 +117,14 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
             public void ancestorRemoved(AncestorEvent event) {
             }
         });
+        
         SHOW_TOOLBAR_OPTION = new Option(this, true);
         SHOW_STATUSBAR_OPTION = new Option(this, true);
         SHOW_TABBEDPANE_OPTION = new Option(this, true);
         SHOW_FILE_TOOLBAR_OPTION = new Option(this, true);
         SHOW_FILE_STATUSBAR_OPTION = new Option(this, true);
         STANDALONE_INSTALLKEY_OPTION = new Option(this, false);
+        
         actions = new Actions();
     }
 
@@ -128,11 +161,13 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
             getTabbedPane().setCloseAction(getAction(actions.EXIT));
         }
 
-        setLayout(new BorderLayout());
-        addToolBar();
-        add(getTabbedPane(), BorderLayout.CENTER);
-        add(getBar(), BorderLayout.PAGE_END);
+        this.setLayout(new BorderLayout());
+        
+        this.addToolBar();
+        this.add(getTabbedPane(), BorderLayout.CENTER);
+        this.add(getBar(), BorderLayout.PAGE_END);
 
+        // TODO ... can this go earlier?  it seems to be orphaned here?
         getTabbedPane().getModel().addChangeListener(getChangeListener());
 
         JMeldSettings.getInstance().addConfigurationListener(this);
@@ -192,15 +227,11 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         }
     }
 
-    public void openComparison(String leftName,
-                               String rightName) {
-        File leftFile;
-        File rightFile;
-        File file;
-
+    public void openComparison(String leftName, String rightName) {
+        
         if (!StringUtil.isEmpty(leftName) && !StringUtil.isEmpty(rightName)) {
-            leftFile = new File(leftName);
-            rightFile = new File(rightName);
+            final File leftFile = new File(leftName);
+            final File rightFile = new File(rightName);
             if (leftFile.isDirectory()) {
                 if (rightFile.isDirectory()) {
                     new DirectoryComparison(this, leftFile, rightFile, JMeldSettings
@@ -217,7 +248,7 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
             }
         } else {
             if (!StringUtil.isEmpty(leftName)) {
-                file = new File(leftName);
+                final File file = new File(leftName);
                 if (file.exists() && VersionControlUtil.isVersionControlled(file)) {
                     VersionControlComparison versionControlComparison = new VersionControlComparison(this, file);
                     versionControlComparison.execute();
@@ -244,18 +275,17 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
     }
 
     private JComponent getToolBar() {
-        JButton button;
-        JToolBar tb;
-        ToolBarBuilder builder;
 
-        tb = new JToolBar();
+        final JToolBar tb = new JToolBar();
         tb.setFloatable(false);
         tb.setRollover(true);
 
-        builder = new ToolBarBuilder(tb);
+        JButton button; // reusable object reference
+        final ToolBarBuilder builder = new ToolBarBuilder(tb);
 
         button = WidgetFactory.getToolBarButton(getAction(actions.NEW));
         builder.addButton(button);
+
         button = WidgetFactory.getToolBarButton(getAction(actions.SAVE));
         builder.addButton(button);
 
@@ -263,6 +293,7 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
 
         button = WidgetFactory.getToolBarButton(getAction(actions.UNDO));
         builder.addButton(button);
+        
         button = WidgetFactory.getToolBarButton(getAction(actions.REDO));
         builder.addButton(button);
 
@@ -303,7 +334,7 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
     }
 
     public void initActions() {
-        MeldAction action;
+        MeldAction action; // reusable object reference
 
         actionHandler = new ActionHandler();
 
@@ -314,6 +345,7 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         action = actionHandler.createAction(this, actions.SAVE);
         action.setIcon("stock_save");
         action.setToolTip("Save the changed files");
+        
         if (!STANDALONE_INSTALLKEY_OPTION.isEnabled()) {
             installKey("ctrl S", action);
         }
@@ -321,6 +353,7 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         action = actionHandler.createAction(this, actions.UNDO);
         action.setIcon("stock_undo");
         action.setToolTip("Undo the latest change");
+        
         installKey("control Z", action);
         installKey("control Y", action);
 
@@ -416,28 +449,35 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         }
     }
 
+    /**
+     * Action for the "New" file comparison button/menu
+     * 
+     * @param ae the ActionEvent
+     */
     public void doNew(ActionEvent ae) {
-        PanelDialog dialog;
-
-        dialog = new PanelDialog(this);
+        
+        final PanelDialog dialog = new PanelDialog(this);
         dialog.show();
 
-
-        //TODO Son todo SwingWorker<String, Object>;
-        //Agregar una interfaz común
+        // TODO Son todo SwingWorker<String, Object>;
+        // Agregar una interfaz común
         if (dialog.getFunction() == PanelDialog.Function.FILE_COMPARISON) {
-            FileComparison fileComparison = new FileComparison(this, new File(dialog.getLeftFileName()), new File(dialog
-                        .getRightFileName()));
-            fileComparison.setOpenInBackground(false);
-            fileComparison.execute();
+            FileComparison fc = new FileComparison(this, 
+                    new File(dialog.getLeftFileName()),
+                    new File(dialog.getRightFileName())   );
+            fc.setOpenInBackground(false);
+            fc.execute();
         } else if (dialog.getFunction() == PanelDialog.Function.DIRECTORY_COMPARISON) {
-            new DirectoryComparison(this, new File(dialog.getLeftDirectoryName()), new File(dialog.getRightDirectoryName()), dialog
-                        .getFilter()).execute();
+            DirectoryComparison dc = new DirectoryComparison(this, 
+                    new File(dialog.getLeftDirectoryName()),
+                    new File(dialog.getRightDirectoryName()), 
+                    dialog.getFilter());
+            dc.execute();
         } else if (dialog.getFunction() == PanelDialog.Function.VERSION_CONTROL) {
-            VersionControlComparison versionControlComparison = new VersionControlComparison(this, new File(dialog
-                    .getVersionControlDirectoryName()));
-            versionControlComparison.execute();
-
+            VersionControlComparison vc = 
+                new VersionControlComparison(this,
+                    new File(dialog.getVersionControlDirectoryName()));
+            vc.execute();
         }
     }
 
@@ -637,15 +677,14 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
 
     public void doHelp(ActionEvent ae) {
         try {
-            JPanel panel;
-            AbstractContentPanel content;
             URL url;
             HelpSet helpSet;
-            JHelpContentViewer viewer;
+            String contentId;
             JHelpNavigator navigator;
+            JHelpContentViewer viewer;
             NavigatorView navigatorView;
             JSplitPane splitPane;
-            String contentId;
+            AbstractContentPanel content;
 
             contentId = "HelpPanel";
             if (checkAlreadyOpen(contentId)) {
@@ -656,8 +695,7 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
             helpSet = new HelpSet(getClass().getClassLoader(), url);
             viewer = new JHelpContentViewer(helpSet);
             navigatorView = helpSet.getNavigatorView("TOC");
-            navigator = (JHelpNavigator) navigatorView.createNavigator(viewer
-                    .getModel());
+            navigator = (JHelpNavigator) navigatorView.createNavigator(viewer .getModel());
             splitPane = new JSplitPane();
             splitPane.setLeftComponent(navigator);
             splitPane.setRightComponent(viewer);
@@ -669,37 +707,32 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
             /*
               content = new HelpPanel(this);
             */
-            getTabbedPane().addTab("Help",
-                    ImageUtil.getSmallImageIcon("stock_help-agent"),
-                    content);
+            getTabbedPane().addTab("Help", ImageUtil.getSmallImageIcon("stock_help-agent"), content);
             getTabbedPane().setSelectedComponent(content);
+            
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
 
+    // TODO ... this is WAY ugly!!!
     public void doAbout(ActionEvent ae) {
-        AbstractContentPanel content;
-        String contentId;
 
-        contentId = "AboutPanel";
+        final String contentId = "AboutPanel";        
         if (checkAlreadyOpen(contentId)) {
             return;
         }
 
-        content = new AbstractContentPanel();
+        final AbstractContentPanel content = new AbstractContentPanel();
         content.setId(contentId);
         content.setLayout(new BorderLayout());
-        content.add(new JButton("JMeld version: " + Version.getVersion()),
-                BorderLayout.CENTER);
+        content.add(new JButton("JMeld version: " + Version.getVersion()), BorderLayout.CENTER);
 
-        getTabbedPane().addTab("About", ImageUtil.getSmallImageIcon("stock_about"),
-                content);
+        getTabbedPane().addTab("About", ImageUtil.getSmallImageIcon("stock_about"), content);
         getTabbedPane().setSelectedComponent(content);
     }
 
     public void doExit(ActionEvent ae) {
-        JMeldContentPanelIF cp;
 
         // Stop the searchBarDialog if it is showing.
         if (currentBarDialog == getSearchBarDialog()) {
@@ -712,7 +745,7 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
             return;
         }
 
-        cp = getCurrentContentPanel();
+        JMeldContentPanelIF cp = getCurrentContentPanel();
         if (cp == null) {
             return;
         }
@@ -729,25 +762,21 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
     }
 
     public void doSettings(ActionEvent ae) {
-        AbstractContentPanel content;
-        String contentId;
-
-        contentId = "SettingsPanel";
+        
+        final String contentId = "SettingsPanel";
         if (checkAlreadyOpen(contentId)) {
             return;
         }
 
-        content = new SettingsPanel(this);
+        final AbstractContentPanel content = new SettingsPanel(this);
         content.setId(contentId);
-        getTabbedPane().addTab("Settings", ImageUtil
-                .getSmallImageIcon("stock_preferences"), content);
+        getTabbedPane().addTab("Settings", ImageUtil .getSmallImageIcon("stock_preferences"), content);
         getTabbedPane().setSelectedComponent(content);
     }
 
     private boolean checkAlreadyOpen(String contentId) {
-        AbstractContentPanel contentPanel;
-
-        contentPanel = getAlreadyOpen(getTabbedPane(), contentId);
+        
+        final AbstractContentPanel contentPanel = getAlreadyOpen(getTabbedPane(), contentId);
         if (contentPanel != null) {
             getTabbedPane().setSelectedComponent(contentPanel);
             return true;
@@ -795,9 +824,8 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
     }
 
     public static  List<AbstractContentPanel> getContentPanelList(JideTabbedPane tabbedPane) {
-        List<AbstractContentPanel> result;
 
-        result = new ArrayList<AbstractContentPanel>();
+        final List<AbstractContentPanel> result = new ArrayList<AbstractContentPanel>();
 
         if (tabbedPane != null) {
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
@@ -808,9 +836,7 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         return result;
     }
 
-    private void installKey(boolean enabled,
-                            String key,
-                            MeldAction action) {
+    private void installKey(boolean enabled, String key, MeldAction action) {
         if (!enabled) {
             deInstallKey(key, action);
         } else {
@@ -818,13 +844,11 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         }
     }
 
-    private void installKey(String key,
-                            MeldAction action) {
+    private void installKey(String key, MeldAction action) {
         SwingUtil.installKey(this, key, action);
     }
 
-    private void deInstallKey(String key,
-                              MeldAction action) {
+    private void deInstallKey(String key, MeldAction action) {
         SwingUtil.deInstallKey(this, key, action);
     }
 
@@ -858,27 +882,24 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
       }
     */
     private boolean doExitTab(Component component) {
-        AbstractContentPanel content;
-        Icon icon;
-        int index;
 
         if (component == null) {
             return false;
         }
 
-        index = getTabbedPane().indexOfComponent(component);
+        final int index = getTabbedPane().indexOfComponent(component);
         if (index == -1) {
             return false;
         }
 
         if (component instanceof AbstractContentPanel) {
-            content = (AbstractContentPanel) component;
+            final AbstractContentPanel content = (AbstractContentPanel) component;
             if (!content.checkSave()) {
                 return false;
             }
         }
 
-        icon = getTabbedPane().getIconAt(index);
+        final Icon icon = getTabbedPane().getIconAt(index);
         if (icon != null && icon instanceof TabIcon) {
             ((TabIcon) icon).exit();
         }

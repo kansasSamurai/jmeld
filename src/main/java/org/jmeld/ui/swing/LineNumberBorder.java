@@ -87,7 +87,9 @@ public class LineNumberBorder extends EmptyBorder {
         final JMeldSettings settings = JMeldSettings.getInstance();
         font = settings.getEditor().isCustomFontEnabled() ? settings.getEditor().getFont() : null;
         if (font != null) {
-            font = font.deriveFont(.8f * font.getSize());
+            // I originally tried the following but didn't like the way it looked, even when aligned on the baseline
+            // Reverting back to using the same size as the text area(s) - which is what Eclipse does if that helps
+            // font = font.deriveFont(.8f * font.getSize());
         } else {
             // worst case default to system "monospaced" at 10pt
             font = new Font("Monospaced", Font.PLAIN, 10);            
@@ -115,11 +117,12 @@ public class LineNumberBorder extends EmptyBorder {
             final int startLine = textArea.getLineOfOffset(startOffset);
             final int endLine = textArea.getLineOfOffset(endOffset);
             
-            int heightCorrection;
             final Rectangle r1 = textArea.modelToView(startOffset);
             final int lineHeight = r1.height;
-            heightCorrection = (lineHeight - fontHeight) / 2;
+            int heightCorrection = (lineHeight - fontHeight) / 2; // TODO this can be final once the baseline is figured out
             heightCorrection += 5; // TODO this is new and hacked; figure out a better solution for correcting the baseline
+            // ^^^ more testing necessary using alternate font/sizes (though it may be best not to give the user the choice)
+            // If someone absolutely wants that... they can code it themselves and contribute to the cause.
 
             g2.setColor(lineColor);
             g2.drawLine(left - MARGIN, clip.y, left - MARGIN, clip.y + clip.height);

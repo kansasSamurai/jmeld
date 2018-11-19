@@ -16,19 +16,28 @@
  */
 package org.jmeld;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
+
 import org.jmeld.settings.JMeldSettings;
 import org.jmeld.ui.JMeldPanel;
 import org.jmeld.ui.util.ImageUtil;
 import org.jmeld.ui.util.LookAndFeelManager;
 import org.jmeld.util.prefs.WindowPreference;
 
-import javax.swing.*;
-import java.util.ArrayList;
-import java.util.List;
-
-public class JMeld
-        implements Runnable {
+/**
+ * 
+ * @author jmeld-legacy
+ *
+ */
+public class JMeld implements Runnable {
+    
     private List<String> fileNameList;
+
+    // Singleton
     private static JMeldPanel jmeldPanel;
 
     public JMeld(String[] args) {
@@ -43,34 +52,43 @@ public class JMeld
         return jmeldPanel;
     }
 
+    /**
+     * Runs on the EDT when invoked via SwingUtilities.invokeLater() < (as it should be)
+     */
     public void run() {
-        JFrame frame;
 
+        // This must be called before showing the JFrame (so just do it before *everything*)
         LookAndFeelManager.getInstance().install();
 
-        frame = new JFrame("JMeld");
         jmeldPanel = new JMeldPanel();
+
+        final JFrame frame = new JFrame("JMeld");
         frame.add(jmeldPanel);
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         frame.setIconImage(ImageUtil.getImageIcon("jmeld-small").getImage());
         new WindowPreference(frame.getTitle(), frame);
         frame.addWindowListener(jmeldPanel.getWindowListener());
         frame.setVisible(true);
-
         frame.toFront();
 
         jmeldPanel.openComparison(fileNameList);
     }
 
     public static void main(String[] args) {
-        JMeldSettings settings = JMeldSettings.getInstance();
+        final JMeldSettings settings = JMeldSettings.getInstance();
         settings.getEditor().setShowLineNumbers(true);
-        settings.setDrawCurves(true);
+        
+        // TODO Bug: if setDrawCurves is true, F7/F8 do not work correctly
+        // Actually, it seems to manifest itself even when false...
+        // the JSplitPane appears to get focus when hitting F7/F8 instead of the DiffScrollComponent
+        settings.setDrawCurves(false); // original setting is:  true
         settings.setCurveType(1);
+        
         if (settings.getEditor().isAntialiasEnabled()) {
             System.setProperty("swing.aatext", "true");
         }
 
         SwingUtilities.invokeLater(new JMeld(args));
     }
+    
 }

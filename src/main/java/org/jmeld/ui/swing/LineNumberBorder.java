@@ -38,6 +38,7 @@ import org.jmeld.ui.util.Colors;
  * TODO Investigate better looking/performing alternatives
  * 
  * @author jmeld-legacy
+ * @author Rick Wellman
  *
  */
 @SuppressWarnings("serial")
@@ -46,6 +47,7 @@ public class LineNumberBorder extends EmptyBorder {
     private FilePanel filePanel;
     private Color background;
     private Color lineColor;
+    private Color textColor = new Color(0x3C3C3C);
     private Font font;
     private int fontWidth;
     private int fontHeight;
@@ -105,8 +107,8 @@ public class LineNumberBorder extends EmptyBorder {
 
     // TODO this should be part of an interface to show its relationship to JMHighlighter
     public void paintAfter(Graphics g, int startOffset, int endOffset) {
-        final Graphics2D g2 = (Graphics2D) g;
-        final Rectangle clip = g.getClipBounds();
+        final Graphics2D g2 = (Graphics2D) g.create();
+        final Rectangle clip = g2.getClipBounds();
         final JTextArea textArea = filePanel.getEditor();
 
         try {
@@ -119,25 +121,28 @@ public class LineNumberBorder extends EmptyBorder {
             heightCorrection = (lineHeight - fontHeight) / 2;
             heightCorrection += 5; // TODO this is new and hacked; figure out a better solution for correcting the baseline
 
-            g.setColor(lineColor);
-            g.drawLine(left - MARGIN, clip.y, left - MARGIN, clip.y + clip.height);
+            g2.setColor(lineColor);
+            g2.drawLine(left - MARGIN, clip.y, left - MARGIN, clip.y + clip.height);
 
-            if (JMeldSettings.getInstance().getEditor().isAntialiasEnabled()) {
-                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            }
+            // Draw Text
+            g2.setFont(font);
+            g2.setColor(textColor); // (Color.black);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-            g.setFont(font);
-            g.setColor(Color.black);
             int y = r1.y;
             for (int line = startLine; line <= endLine; line++) {
                 y += lineHeight;
                 
                 final String nn = Integer.toString(line + 1);
-                g.drawString(nn, left - (fontWidth * nn.length()) - 1 - MARGIN, y - heightCorrection);
+                g2.drawString(nn, left - (fontWidth * nn.length()) - 1 - MARGIN, y - heightCorrection);
             }
+            
         } catch (Exception ex) {
             ex.printStackTrace();
+        } finally {
+            g2.dispose();
         }
+        
     }
     
 }

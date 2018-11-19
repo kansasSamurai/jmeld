@@ -1,20 +1,52 @@
 /*
    JMeld is a visual diff and merge tool.
-   Copyright (C) 2007  Kees Kuip
+   
+   -----
+   Copyright (C) 2018  Rick Wellman
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
  */
 package org.jmeld.ui;
+
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.ImageIcon;
+import javax.swing.ListSelectionModel;
+import javax.swing.tree.TreePath;
+import javax.swing.undo.CompoundEdit;
 
 import org.jdesktop.swingworker.SwingWorker;
 import org.jdesktop.swingx.decorator.ColorHighlighter;
@@ -35,16 +67,15 @@ import org.jmeld.util.file.FolderDiff;
 import org.jmeld.util.file.cmd.AbstractCmd;
 import org.jmeld.util.node.JMDiffNode;
 
-import javax.swing.*;
-import javax.swing.tree.TreePath;
-import javax.swing.undo.CompoundEdit;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseListener;
-import java.util.*;
-import java.util.List;
-
+/**
+ * 
+ * @author jmeld-legacy
+ * @author Rick Wellman
+ *
+ */
+@SuppressWarnings({ "unchecked", "rawtypes", "serial" })
 public class FolderDiffPanel extends FolderDiffForm implements ConfigurationListenerIF {
+    
     protected JMeldPanel mainPanel;
     protected FolderDiff diff;
     protected ActionHandler actionHandler;
@@ -61,8 +92,7 @@ public class FolderDiffPanel extends FolderDiffForm implements ConfigurationList
     protected void init() {
         actionHandler = new ActionHandler();
 
-        hierarchyComboBox.setModel(new DefaultComboBoxModel(
-                FolderSettings.FolderView.values()));
+        hierarchyComboBox.setModel(new DefaultComboBoxModel(FolderSettings.FolderView.values()));
         hierarchyComboBox.setSelectedItem(getFolderSettings().getView());
         hierarchyComboBox.setFocusable(false);
 
@@ -74,11 +104,9 @@ public class FolderDiffPanel extends FolderDiffForm implements ConfigurationList
         onlyRightButton.setSelected(getFolderSettings().getOnlyRight());
 
         leftRightChangedButton.setText(null);
-        leftRightChangedButton.setIcon(ImageUtil
-                .getImageIcon("jmeld_left-right-changed"));
+        leftRightChangedButton.setIcon(ImageUtil.getImageIcon("jmeld_left-right-changed"));
         leftRightChangedButton.setFocusable(false);
-        leftRightChangedButton.setSelected(getFolderSettings()
-                .getLeftRightChanged());
+        leftRightChangedButton.setSelected(getFolderSettings().getLeftRightChanged());
 
         onlyLeftButton.setText(null);
         onlyLeftButton.setIcon(ImageUtil.getImageIcon("jmeld_only-left"));
@@ -86,27 +114,22 @@ public class FolderDiffPanel extends FolderDiffForm implements ConfigurationList
         onlyLeftButton.setSelected(getFolderSettings().getOnlyLeft());
 
         leftRightUnChangedButton.setText(null);
-        leftRightUnChangedButton.setIcon(ImageUtil
-                .getImageIcon("jmeld_left-right-unchanged"));
+        leftRightUnChangedButton.setIcon(ImageUtil.getImageIcon("jmeld_left-right-unchanged"));
         leftRightUnChangedButton.setFocusable(false);
-        leftRightUnChangedButton.setSelected(getFolderSettings()
-                .getLeftRightUnChanged());
+        leftRightUnChangedButton.setSelected(getFolderSettings().getLeftRightUnChanged());
 
         expandAllButton.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         expandAllButton.setContentAreaFilled(false);
         expandAllButton.setText(null);
         expandAllButton.setIcon(ImageUtil.getSmallImageIcon("stock_expand-all"));
-        expandAllButton.setPressedIcon(ImageUtil
-                .createDarkerIcon((ImageIcon) expandAllButton.getIcon()));
+        expandAllButton.setPressedIcon(ImageUtil.createDarkerIcon((ImageIcon) expandAllButton.getIcon()));
         expandAllButton.setFocusable(false);
 
         collapseAllButton.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         collapseAllButton.setContentAreaFilled(false);
         collapseAllButton.setText(null);
-        collapseAllButton
-                .setIcon(ImageUtil.getSmallImageIcon("stock_collapse-all"));
-        collapseAllButton.setPressedIcon(ImageUtil
-                .createDarkerIcon((ImageIcon) collapseAllButton.getIcon()));
+        collapseAllButton.setIcon(ImageUtil.getSmallImageIcon("stock_collapse-all"));
+        collapseAllButton.setPressedIcon(ImageUtil .createDarkerIcon((ImageIcon) collapseAllButton.getIcon()));
         collapseAllButton.setFocusable(false);
 
         folder1Label.init();
@@ -125,10 +148,8 @@ public class FolderDiffPanel extends FolderDiffForm implements ConfigurationList
         folderTreeTable.addMouseListener(folderDiffMouseAdapter);
         folderTreeTable.expandAll();
 
-        folderTreeTable.addHighlighter(new ColorHighlighter(
-                HighlightPredicate.EVEN, Color.white, Color.black));
-        folderTreeTable.addHighlighter(new ColorHighlighter(HighlightPredicate.ODD,
-                Colors.getTableRowHighLighterColor(), Color.black));
+        folderTreeTable.addHighlighter(new ColorHighlighter( HighlightPredicate.EVEN, Color.white, Color.black));
+        folderTreeTable.addHighlighter(new ColorHighlighter( HighlightPredicate.ODD, Colors.getTableRowHighLighterColor(), Color.black));
 
         JMeldSettings.getInstance().addConfigurationListener(this);
     }
@@ -274,7 +295,7 @@ public class FolderDiffPanel extends FolderDiffForm implements ConfigurationList
                 uiNode = new UINode(getTreeTableModel().getColumnCount(), node);
 
                 if (parent != null) {
-                    String parentName = parent.getName();
+                    // String parentName = parent.getName();
                     uiParentNode = new UINode(getTreeTableModel().getColumnCount(), parent);
                     uiParentNode = rootNode.addChild(uiParentNode);
                     uiParentNode.addChild(uiNode);

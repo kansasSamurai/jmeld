@@ -1,70 +1,87 @@
 /*
+   
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
    JMeld is a visual diff and merge tool.
-   Copyright (C) 2007  Kees Kuip
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
  */
 package org.jmeld.ui.swing;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BusyLabel
-    extends JLabel
-{
+import javax.swing.Icon;
+import javax.swing.JLabel;
+import javax.swing.Timer;
+
+/**
+ * 
+ * @author jmeld-legacy
+ * @author Rick Wellman
+ * 
+ */
+@SuppressWarnings("serial")
+public class BusyLabel extends JLabel {
+    
   // Instance variables:
   private Timer timer;
   private boolean busy;
   private BusyIcon icon;
 
-  public BusyLabel()
-  {
-    icon = new BusyIcon();
-    setIcon(icon);
+  public BusyLabel() {
 
-    timer = new Timer(125, busy());
-    timer.setRepeats(false);
+      this.setIcon(icon = new BusyIcon());
+
+      timer = new Timer(125, busy());
+      timer.setRepeats(false);
   }
 
-  public void start()
-  {
+  public void start() {
     busy = true;
     timer.restart();
   }
 
-  public void stop()
-  {
+  public void stop() {
     busy = false;
   }
 
-  private ActionListener busy()
-  {
-    return new ActionListener()
-    {
-      public void actionPerformed(ActionEvent ae)
-      {
-        if (busy)
-        {
+  private ActionListener busy() {
+    return new ActionListener() {
+      public void actionPerformed(ActionEvent ae) {
+        if (busy) {
           icon.roll();
           repaint();
           timer.restart();
-        }
-        else
-        {
+        } else {
           icon.stop();
           repaint();
         }
@@ -72,14 +89,12 @@ public class BusyLabel
     };
   }
 
-  class BusyIcon
-      implements Icon
-  {
+  class BusyIcon implements Icon {
+      
     private int startIndex;
     List<Color> colors;
 
-    BusyIcon()
-    {
+    BusyIcon() {
       colors = new ArrayList<Color>();
       colors.add(new Color(178, 178, 178));
       colors.add(new Color(153, 153, 153));
@@ -91,105 +106,58 @@ public class BusyLabel
       colors.add(new Color(0, 0, 0));
     }
 
-    void setIndex(int startIndex)
-    {
+    void setIndex(int startIndex) {
       this.startIndex = startIndex;
     }
 
-    public void stop()
-    {
+    public void stop() {
       startIndex = 0;
     }
 
-    public void roll()
-    {
+    public void roll() {
       startIndex--;
-      if (startIndex < 0)
-      {
-        startIndex = 7;
+      if (startIndex < 0) {
+        startIndex = colors.size() - 1;
       }
     }
 
-    public int getIconWidth()
-    {
+    @Override
+    public int getIconWidth() {
       return 16;
     }
 
-    public int getIconHeight()
-    {
+    @Override
+    public int getIconHeight() {
       return 16;
     }
 
-    public void paintIcon(Component component, Graphics g, int x, int y)
-    {
-      Color c;
-      int tx;
-      int ty;
+    @Override
+    public void paintIcon(Component component, Graphics g, int x, int y) {
+      
+        final int[] xpos = {10, 12, 10,  6,  2, 0, 2, 6};
+        final int[] ypos = { 2,  6, 10, 12, 10, 6, 2, 0};
+        
+        int tx = 0;
+        int ty = 0;
+        for (int i = 0; i < 8; i++) {
 
-      for (int i = 0; i < 8; i++)
-      {
-        tx = 0;
-        ty = 0;
+            final Color c = busy
+                ? colors.get((i + startIndex) % 8)
+                : colors.get(0)
+                ;
 
-        if (busy)
-        {
-          c = colors.get((i + startIndex) % 8);
+            tx = xpos[i];
+            ty = ypos[i];
+
+            g.setColor(c);
+            g.drawLine(x + tx + 0, y + ty + 1, x + tx + 0, y + ty + 2);
+            g.drawLine(x + tx + 1, y + ty + 0, x + tx + 1, y + ty + 3);
+            g.drawLine(x + tx + 2, y + ty + 0, x + tx + 2, y + ty + 3);
+            g.drawLine(x + tx + 3, y + ty + 1, x + tx + 3, y + ty + 2);
+        
         }
-        else
-        {
-          c = colors.get(0);
-        }
-
-        switch (i)
-        {
-
-          case 0:
-            tx = 10;
-            ty = 2;
-            break;
-
-          case 1:
-            tx = 12;
-            ty = 6;
-            break;
-
-          case 2:
-            tx = 10;
-            ty = 10;
-            break;
-
-          case 3:
-            tx = 6;
-            ty = 12;
-            break;
-
-          case 4:
-            tx = 2;
-            ty = 10;
-            break;
-
-          case 5:
-            tx = 0;
-            ty = 6;
-            break;
-
-          case 6:
-            tx = 2;
-            ty = 2;
-            break;
-
-          case 7:
-            tx = 6;
-            ty = 0;
-            break;
-        }
-
-        g.setColor(c);
-        g.drawLine(x + tx + 0, y + ty + 1, x + tx + 0, y + ty + 2);
-        g.drawLine(x + tx + 1, y + ty + 0, x + tx + 1, y + ty + 3);
-        g.drawLine(x + tx + 2, y + ty + 0, x + tx + 2, y + ty + 3);
-        g.drawLine(x + tx + 3, y + ty + 1, x + tx + 3, y + ty + 2);
-      }
-    }
-  }
+    } // end method paintIcon()
+    
+  } // end class BusyIcon
+  
 }

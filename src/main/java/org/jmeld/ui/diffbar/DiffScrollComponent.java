@@ -1,8 +1,6 @@
-/*
-   JMeld is a visual diff and merge tool.
-   
-   -----
-   Copyright (C) 2018  Rick Wellman
+/* 
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
    
    This library is free software and has been modified according to the permissions 
    granted below; this version of the library continues to be distributed under the terms of the
@@ -10,6 +8,7 @@
    and may, therefore, be redistributed or further modified under the same terms as the original.
    
    -----
+   JMeld is a visual diff and merge tool.
    Copyright (C) 2007  Kees Kuip - GNU LGPL
    
    This library is free software; you can redistribute it and/or
@@ -28,6 +27,7 @@
    Free Software Foundation, Inc.
    51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
+   
  */
 package org.jmeld.ui.diffbar;
 
@@ -72,8 +72,9 @@ import org.jmeld.ui.util.RevisionUtil;
 import org.jmeld.util.conf.ConfigurationListenerIF;
 
 /**
+ * A custom JComponent that provides the "interior view" between the two FilePanel(s).
  * 
- * @author jmeld-legacy committed
+ * @author jmeld-legacy 
  * @author Rick Wellman
  *
  */
@@ -240,8 +241,6 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
         // Reusable object references
         Rectangle r;
         Point p;
-        Color color;
-        Color darkerColor;
         Polygon shape;
         Rectangle rect;
 
@@ -338,8 +337,9 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                 final boolean selected = (delta == diffPanel.getSelectedDelta());
 
                 // OK, this delta has some visible lines. Now draw it!
-                color = RevisionUtil.getColor(delta);
-                darkerColor = RevisionUtil.getDarkerColor(delta);
+                final Color color = RevisionUtil.getColor(delta);
+                final Color darkerColor = RevisionUtil.getOpaqueColor(delta);
+                
                 g2.setColor(color);
 
                 // Draw original chunk:

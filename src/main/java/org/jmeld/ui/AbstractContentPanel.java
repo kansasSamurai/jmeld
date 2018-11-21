@@ -1,8 +1,7 @@
 /*
-   JMeld is a visual diff and merge tool.
    
-   -----
-   Copyright (C) 2018  Rick Wellman
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
    
    This library is free software and has been modified according to the permissions 
    granted below; this version of the library continues to be distributed under the terms of the
@@ -10,6 +9,7 @@
    and may, therefore, be redistributed or further modified under the same terms as the original.
    
    -----
+   JMeld is a visual diff and merge tool.
    Copyright (C) 2007  Kees Kuip - GNU LGPL
    
    This library is free software; you can redistribute it and/or
@@ -28,6 +28,7 @@
    Free Software Foundation, Inc.
    51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
+   
  */
 package org.jmeld.ui;
 
@@ -43,10 +44,12 @@ import javax.swing.undo.UndoManager;
 import javax.swing.undo.UndoableEdit;
 
 /**
- * Base class for various top level containers; main purpose seems to be providing an "UndoManager"
+ * An extension of JPanel that serves as a base class for various top level containers; 
+ * main purpose seems to be providing an "UndoManager"
  * 
  * @author jmeld-legacy
- *
+ * @author Rick Wellman
+ * 
  */
 @SuppressWarnings("serial")
 public class AbstractContentPanel extends JPanel implements JMeldContentPanelIF {

@@ -189,7 +189,7 @@ public class RevisionBar extends JComponent {
             final int height = heightCalc <= 0 ? 1 : heightCalc;
             
             // Set the color corresponding to the delta type then paint the delta
-            g2.setColor(RevisionUtil.getColor(delta));
+            g2.setColor(RevisionUtil.getOpaqueColor(delta));
             g2.fillRect(0, y, r.width, height);
             
         }

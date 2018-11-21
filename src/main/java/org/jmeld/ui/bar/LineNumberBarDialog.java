@@ -44,7 +44,7 @@ import org.jmeld.ui.AbstractBarDialog;
 import org.jmeld.ui.JMeldPanel;
 
 /**
- * An extension of JPanel that implements the "Go To Line" feature
+ * An extension of JPanel that implements the "Go To Line" (CTRL+L) feature
  * 
  * @author jmeld-legacy 
  * @author Rick Wellman
@@ -65,11 +65,11 @@ public class LineNumberBarDialog extends AbstractBarDialog {
     setLayout(new FlowLayout(FlowLayout.LEADING));
 
     // Incremental search:
-    lineNumberField = new JTextField(15);
+    lineNumberField = new JTextField(7);
     lineNumberField.addKeyListener(getSearchKeyAction());
 
     add(Box.createHorizontalStrut(5));
-    add(new JLabel("Linenumber:"));
+    add(new JLabel("GO TO LINE:"));
     add(lineNumberField);
     
   }

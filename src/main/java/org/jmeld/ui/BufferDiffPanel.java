@@ -1,23 +1,84 @@
 /*
+   
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
    JMeld is a visual diff and merge tool.
-   Copyright (C) 2007  Kees Kuip
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
+   
  */
 package org.jmeld.ui;
 
-import com.jgoodies.forms.layout.CellConstraints;
-import com.jgoodies.forms.layout.FormLayout;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTree;
+import javax.swing.JViewport;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.border.MatteBorder;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.JTextComponent;
+import javax.swing.text.PlainDocument;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreePath;
+
 import org.jmeld.JMeldException;
 import org.jmeld.diff.JMChunk;
 import org.jmeld.diff.JMDelta;
@@ -38,40 +99,35 @@ import org.jmeld.util.conf.ConfigurationListenerIF;
 import org.jmeld.util.node.BufferNode;
 import org.jmeld.util.node.JMDiffNode;
 
-import javax.swing.*;
-import javax.swing.border.MatteBorder;
-import javax.swing.event.*;
-import javax.swing.table.TableColumn;
-import javax.swing.table.TableColumnModel;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.JTextComponent;
-import javax.swing.text.PlainDocument;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreePath;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import com.jgoodies.forms.layout.CellConstraints;
+import com.jgoodies.forms.layout.FormLayout;
 
+/**
+ * An extension of JPanel that contains all the "diff details" such as the jtree and levensteinGraphTable.
+ * 
+ * @author jmeld-legacy
+ * @author Rick Wellman
+ *
+ */
+@SuppressWarnings("serial")
 public class BufferDiffPanel extends AbstractContentPanel implements ConfigurationListenerIF {
+    
     public static final int LEFT = 0;
     public static final int MIDDLE = 1; //TODO: Usar el comparador del medio con dos JDiff
     public static final int RIGHT = 2;
     public static final int NUMBER_OF_PANELS = 3;
+    
+    private int selectedLine;
+    private int filePanelSelectedIndex = -1;
+    
+    private JMDiff diff;
     private JMeldPanel mainPanel;
-    private FilePanel[] filePanels;
     private JMDiffNode diffNode;
-    int filePanelSelectedIndex = -1;
     private JMRevision currentRevision;
     private JMDelta selectedDelta;
-    private int selectedLine;
-    private ScrollSynchronizer scrollSynchronizer;
-    private JMDiff diff;
     private JTable levensteinGraphTable;
+    private FilePanel[] filePanels;
+    private ScrollSynchronizer scrollSynchronizer;
     private DiffTree diffTree;
 
     private boolean showTree;
@@ -83,15 +139,19 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
     static Color newColor = Color.CYAN;
     static Color mixColor = Color.WHITE;
     static {
-        selectionColor = new Color(selectionColor.getRed() * newColor.getRed()/mixColor.getRed()
-                ,selectionColor.getGreen() * newColor.getGreen()/mixColor.getGreen()
-                ,selectionColor.getBlue() * newColor.getBlue()/mixColor.getBlue());
+        selectionColor = new Color(
+             selectionColor.getRed()   * newColor.getRed()/mixColor.getRed()
+            ,selectionColor.getGreen() * newColor.getGreen()/mixColor.getGreen()
+            ,selectionColor.getBlue()  * newColor.getBlue()/mixColor.getBlue());
     }
 
-    BufferDiffPanel(JMeldPanel mainPanel) {
+    public BufferDiffPanel(JMeldPanel mainPanel) {
         this.mainPanel = mainPanel;
+        
         readConfig();
+        
         JMeldSettings.getInstance().addConfigurationListener(this);
+        
         diff = new JMDiff();
 
         init();
@@ -134,11 +194,10 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
         setBufferDocuments(leftDocument, rightDocument, getDiffNode().getDiff(), getDiffNode().getRevision());
     }
 
-    private void setBufferDocuments(BufferDocumentIF bd1, BufferDocumentIF bd2,
-                                    JMDiff diff, JMRevision revision) {
+    private void setBufferDocuments(BufferDocumentIF bd1, BufferDocumentIF bd2, JMDiff diff, JMRevision revision) {
+        
         this.diff = diff;
-
-        currentRevision = revision;
+        this.currentRevision = revision;
 
         if (bd1 != null) {
             filePanels[LEFT].setBufferDocument(bd1);
@@ -156,6 +215,7 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
         if (bd1 != null && bd2 != null) {
             reDisplay();
         }
+        
     }
 
     private void reDisplay() {
@@ -278,21 +338,18 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
     }
 
     private void init() {
-        FormLayout layout;
-        String columns;
-        String rows;
-        CellConstraints cc;
 
-        columns = "3px, pref, 3px, 0:grow, 5px, min, 60px, 0:grow, 25px, min, 3px, pref, 3px";
-        rows = "6px, pref, 3px, fill:0:grow, pref";
+        final String columns = "3px, pref, 3px, 0:grow, 5px, min, 60px, 0:grow, 25px, min, 3px, pref, 3px";
+        final String rows = "6px, pref, 3px, fill:0:grow, pref";
 
-        setLayout(new BorderLayout());
+        this.setLayout(new BorderLayout());
 
         if (splitPane != null) {
-            remove(splitPane);
+            this.remove(splitPane);
         }
-        splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, buildFilePanel(columns, rows), buildBottonSplit());
-        add(splitPane);
+
+        this.splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, buildFilePanel(columns, rows), buildBottonSplit());
+        add(this.splitPane);
 
         scrollSynchronizer = new ScrollSynchronizer(this, filePanels[LEFT], filePanels[RIGHT]);
 
@@ -300,8 +357,9 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
     }
 
     private JComponent buildBottonSplit() {
+        
         JScrollPane scrollTreePane = buildTreePane();
-
+        
         JComponent levensteinPanel = buildLevenstheinTable();
 
         JComponent bottomSplit;
@@ -314,6 +372,7 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
         } else {
             bottomSplit = levensteinPanel;
         }
+        
         return bottomSplit;
     }
 
@@ -469,8 +528,8 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
                                 int endCol = rightEditor.getLineOfOffset(selectedColumn - 2 + selectedColumnCount - 1);
                                 JMChunk revised = new JMChunk(firstCol, endCol - firstCol + 1);
 
-                                JMDelta newDdelta = new JMDelta(original, revised);
-                                newDdelta.setRevision(currentRevision);
+                                JMDelta newDdelta = new JMDelta(currentRevision, original, revised);
+                                // newDdelta.setRevision(currentRevision);
                                 boolean createNew  = true;
                                 List<JMDelta> deltas = currentRevision.getDeltas();
                                 for (int i = 0; i < deltas.size(); i++) {
@@ -480,6 +539,7 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
                                         createNew = false;
                                     }
                                 }
+                                
                                 JMRevision changeRevision;
                                 if (createNew) {
                                     changeRevision = currentRevision.createChangeRevision(original, revised, false);
@@ -490,7 +550,8 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
                                 }
 
                                 List<JMDelta> changeDeltas = changeRevision.getDeltas();
-                                changeDeltas.add(new JMDelta(new JMChunk(selectedRow - 2 - leftEditor.getLineStartOffset(firstLine), selectedRowCount)
+                                changeDeltas.add(new JMDelta( changeRevision // is changeRevision correct?  it was added when JMDelta.setRevision was removed
+                                        , new JMChunk(selectedRow - 2 - leftEditor.getLineStartOffset(firstLine), selectedRowCount)
                                         , new JMChunk(selectedColumn - 2 - leftEditor.getLineStartOffset(firstCol), selectedColumnCount)
                                 ));
                                 reDisplay();
@@ -503,6 +564,7 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
                     return menuItem;
                 }
 
+                @SuppressWarnings("unused")
                 private boolean enableInsertAction(DefaultMutableTreeNode node) {
                     int selectedRow = levensteinGraphTable.getSelectedRow();
                     int selectedColumn = levensteinGraphTable.getSelectedColumn();
@@ -603,22 +665,32 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
                             startCol += wordDeltaRevised.getAnchor();
                             endCol = startCol + wordDeltaRevised.getSize() +offsetCol;
                         }
-                        levensteinGraphTable.clearSelection();
-                        if (lineDelta.isAdd()) {
-                            HashMap<Point, MatteBorder> rowLineSelection = createRowLineSelection(startRow - 2);
-                            ((LevenshteinTableModel)levensteinGraphTable.getModel()).setBorderSelections(rowLineSelection);
-                            startRow = -1;
-                            endRow = -1;
+                        
+                        // If shown, update the levensteinGraphTable
+                        if (levensteinGraphTable != null) {
+                            final LevenshteinTableModel tmodel = ((LevenshteinTableModel)levensteinGraphTable.getModel());
+                            
+                            levensteinGraphTable.clearSelection();
+                            
+                            if (lineDelta.isAdd()) {
+                                HashMap<Point, MatteBorder> rowLineSelection = createRowLineSelection(startRow - 2);
+                                tmodel.setBorderSelections(rowLineSelection);
+                                startRow = -1;
+                                endRow = -1;
+                            }
+                            
+                            if (lineDelta.isDelete()) {
+                                HashMap<Point, MatteBorder> columnLineSelection = createColumnLineSelection(startCol - 2);
+                                tmodel.setBorderSelections(columnLineSelection);
+                                startCol = -1;
+                                endCol = -1;
+                            }
+                            
+                            levensteinGraphTable.changeSelection(startRow, startCol, false, false);
+                            levensteinGraphTable.changeSelection(endRow, endCol, false, true);
+                            levensteinGraphTable.repaint();                            
                         }
-                        if (lineDelta.isDelete()) {
-                            HashMap<Point, MatteBorder> columnLineSelection = createColumnLineSelection(startCol - 2);
-                            ((LevenshteinTableModel)levensteinGraphTable.getModel()).setBorderSelections(columnLineSelection);
-                            startCol = -1;
-                            endCol = -1;
-                        }
-                        levensteinGraphTable.changeSelection(startRow, startCol, false, false);
-                        levensteinGraphTable.changeSelection(endRow, endCol, false, true);
-                        levensteinGraphTable.repaint();
+                        
                     } catch (BadLocationException e) {
                         System.err.printf("(%d, %d, %d, %d)%n", lineStartOffset, lineEndOffset, colStartOffset, colEndOffset);
                         System.err.printf("(%d, %d, %d, %d)%n", firstLine, lines, firstCol, cols);
@@ -921,19 +993,20 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
 
     @Override
     public void doNextSearch() {
-        FilePanel fp;
-        SearchHits searchHits;
 
-        fp = getSelectedPanel();
+        final FilePanel fp = getSelectedPanel();
         if (fp == null) {
             return;
         }
 
-        searchHits = fp.getSearchHits();
-        searchHits.next();
-        fp.reDisplay();
+        final SearchHits searchHits = fp.getSearchHits();
+        if (searchHits != null) {
+            searchHits.next();
+            fp.reDisplay();
 
-        scrollToSearch(fp, searchHits);
+            scrollToSearch(fp, searchHits);            
+        }
+        
     }
 
     @Override
@@ -1123,10 +1196,6 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
     }
 
     public void runDelete(int fromPanelIndex, int toPanelIndex) {
-        JMDelta delta;
-        BufferDocumentIF bufferDocument;
-        PlainDocument document;
-        String s;
         int fromLine;
         int fromOffset;
         int toOffset;
@@ -1135,7 +1204,7 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
         JTextComponent toEditor;
 
         try {
-            delta = getSelectedDelta();
+            final JMDelta delta = getSelectedDelta();
             if (delta == null) {
                 return;
             }
@@ -1149,7 +1218,7 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
                 return;
             }
 
-            bufferDocument = filePanels[fromPanelIndex].getBufferDocument();
+            final BufferDocumentIF bufferDocument = filePanels[fromPanelIndex].getBufferDocument();
             if (fromPanelIndex < toPanelIndex) {
                 chunk = delta.getOriginal();
             } else {
@@ -1157,11 +1226,12 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
             }
             toEditor = filePanels[fromPanelIndex].getEditor();
 
+            // TODO ... this return/null check seems misplaced?
             if (bufferDocument == null) {
                 return;
             }
 
-            document = bufferDocument.getDocument();
+//            document = bufferDocument.getDocument();
             fromLine = chunk.getAnchor();
             size = chunk.getSize();
             fromOffset = bufferDocument.getOffsetForLine(fromLine);
@@ -1313,22 +1383,18 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
 
     @Override
     public void doZoom(boolean direction) {
-        JTextComponent c;
-        Font font;
         float size;
-        Zoom zoom;
 
         for (FilePanel p : filePanels) {
             if (p == null) {
                 continue;
             }
 
-            c = p.getEditor();
+            final JTextComponent c = p.getEditor();
 
-            zoom = (Zoom) c.getClientProperty("JMeld.zoom");
+            Zoom zoom = (Zoom) c.getClientProperty("JMeld.zoom");
             if (zoom == null) {
-                // Save the orginal font because that's the font which will
-                //   give the derived font.
+                // Save the orginal font because that's the font which will give the derived font.
                 zoom = new Zoom();
                 zoom.font = c.getFont();
                 c.putClientProperty("JMeld.zoom", zoom);
@@ -1349,14 +1415,12 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
 
     @Override
     public void doGoToFirst() {
-        JMDelta d;
-        List<JMDelta> deltas;
 
         if (currentRevision == null) {
             return;
         }
 
-        deltas = currentRevision.getDeltas();
+        final List<JMDelta> deltas = currentRevision.getDeltas();
         if (deltas.size() > 0) {
             setSelectedDelta(deltas.get(0));
             showSelectedDelta();
@@ -1365,14 +1429,12 @@ public class BufferDiffPanel extends AbstractContentPanel implements Configurati
 
     @Override
     public void doGoToLast() {
-        JMDelta d;
-        List<JMDelta> deltas;
 
         if (currentRevision == null) {
             return;
         }
 
-        deltas = currentRevision.getDeltas();
+        final List<JMDelta> deltas = currentRevision.getDeltas();
         if (deltas.size() > 0) {
             setSelectedDelta(deltas.get(deltas.size() - 1));
             showSelectedDelta();

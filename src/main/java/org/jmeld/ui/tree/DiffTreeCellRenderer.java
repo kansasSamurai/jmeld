@@ -1,8 +1,6 @@
-/*
-   JMeld is a visual diff and merge tool.
-   
-   -----
-   Copyright (C) 2018  Rick Wellman
+/* 
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
    
    This library is free software and has been modified according to the permissions 
    granted below; this version of the library continues to be distributed under the terms of the
@@ -10,6 +8,7 @@
    and may, therefore, be redistributed or further modified under the same terms as the original.
    
    -----
+   JMeld is a visual diff and merge tool.
    Copyright (C) 2007  Kees Kuip - GNU LGPL
    
    This library is free software; you can redistribute it and/or
@@ -28,6 +27,7 @@
    Free Software Foundation, Inc.
    51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
+   
  */
 package org.jmeld.ui.tree;
 
@@ -48,6 +48,7 @@ import org.jmeld.ui.util.RevisionUtil;
  * Created by alberto on 16/11/14.
  * 
  * @author alberto
+ * @author Rick Wellman
  * 
  */
 @SuppressWarnings("serial")
@@ -86,7 +87,7 @@ class DiffTreeCellRenderer extends DefaultTreeCellRenderer {
         } else if (userObject instanceof JMDelta) {
             final JMDelta delta = (JMDelta) userObject;
             
-            setIcon(new TreeColorIcon(RevisionUtil.getColor(delta)));
+            setIcon(new TreeColorIcon(RevisionUtil.getOpaqueColor(delta)));
             setText(delta.getType().toString());
             
         } else if (value instanceof JMChunkNode) {

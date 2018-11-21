@@ -1,18 +1,33 @@
-/*
+/* 
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
    JMeld is a visual diff and merge tool.
-   Copyright (C) 2007  Kees Kuip
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
+   
  */
 package org.jmeld.ui;
 
@@ -67,7 +82,8 @@ import org.jmeld.util.conf.ConfigurationListenerIF;
  * for a single file's Diff JPanel.
  * 
  * @author jmeld-legacy
- *
+ * @author Rick Wellman
+ * 
  */
 @SuppressWarnings({"rawtypes","unchecked"})
 public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationListenerIF {
@@ -79,16 +95,20 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
     private String name;
     private boolean selected;
     
+    private JTextArea editor;
     private DiffLabel fileLabel;
     private BufferDiffPanel diffPanel;
     private BufferDocumentIF bufferDocument;
     private JComboBox fileBox;
-    private JScrollPane scrollPane;
-    private JTextArea editor;
     private JButton saveButton;
     private SearchHits searchHits;
     private FilePanelBar filePanelBar;
+    private JScrollPane scrollPane;
 
+    // Flyweight(s)
+    private final HighlightOriginal highlightOriginal = new HighlightOriginal(null);
+    private final HighlightRevised highlightRevised = new HighlightRevised(null);
+    
     public FilePanel(BufferDiffPanel diffPanel, String name, int position) {
         this.diffPanel = diffPanel;
         this.name = name;
@@ -340,33 +360,47 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
 
         for (JMDelta delta : revision.getDeltas()) {
             if (BufferDocumentIF.ORIGINAL.equals(name)) {
-                new HighlightOriginal(delta).highlight();
+                highlightOriginal.setDelta(delta).highlight(); // converted to flyweight pattern
             } else if (BufferDocumentIF.REVISED.equals(name)) {
-                new HighlightRevised(delta).highlight();
+                highlightRevised.setDelta(delta).highlight(); // converted to flyweight pattern
             }
         }
+        
     }
 
+    /**
+     * 
+     * @author Rick Wellman
+     *
+     */
     abstract class AbstractHighlight {
+        
         protected JMDelta delta;
 
+        /**
+         * Create a new instance; the 'delta' parameter can now be null
+         * since we now treat this as a flyweight object by creating the
+         * setDelta() method.
+         * 
+         * @param delta
+         */
         public AbstractHighlight(JMDelta delta) {
             this.delta = delta;
         }
+        
+        public AbstractHighlight setDelta(JMDelta d) {
+            this.delta = d;
+            return this;
+        }
 
         protected void highlight() {
-            int fromOffset;
-            int toOffset;
-            JMRevision changeRev;
-            JMChunk changeOriginal;
-            int fromOffset2;
-            int toOffset2;
-            fromOffset = bufferDocument.getOffsetForLine(getPrimaryChunk().getAnchor());
+
+            final int fromOffset = bufferDocument.getOffsetForLine(getPrimaryChunk().getAnchor());
             if (fromOffset < 0) {
                 return;
             }
 
-            toOffset = bufferDocument.getOffsetForLine(getPrimaryChunk().getAnchor() + getPrimaryChunk().getSize());
+            int toOffset = bufferDocument.getOffsetForLine(getPrimaryChunk().getAnchor() + getPrimaryChunk().getSize());
             if (toOffset < 0) {
                 return;
             }
@@ -375,21 +409,21 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
 
             JMHighlightPainter highlight = null;
             if (delta.isChange()) {
-                if (delta.getOriginal().getSize() < MAXSIZE_CHANGE_DIFF
-                        && delta.getRevised().getSize() < MAXSIZE_CHANGE_DIFF) {
-                    changeRev = delta.getChangeRevision();
+                if (    delta.getOriginal().getSize() < MAXSIZE_CHANGE_DIFF
+                     && delta.getRevised().getSize() < MAXSIZE_CHANGE_DIFF) {
+                    
+                    final JMRevision changeRev = delta.getChangeRevision();
                     if (changeRev != null) {
                         for (JMDelta changeDelta : changeRev.getDeltas()) {
-                            changeOriginal = getPrimaryChunk(changeDelta);
+                            final JMChunk changeOriginal = getPrimaryChunk(changeDelta);
                             if (changeOriginal.getSize() <= 0) {
                                 continue;
                             }
 
-                            fromOffset2 = fromOffset + changeOriginal.getAnchor();
-                            toOffset2 = fromOffset2 + changeOriginal.getSize();
+                            final int fromOffset2 = fromOffset + changeOriginal.getAnchor();
+                            final int toOffset2 = fromOffset2 + changeOriginal.getSize();
 
-                            setHighlight(JMHighlighter.LAYER1, fromOffset2, toOffset2,
-                                    JMHighlightPainter.CHANGED_LIGHTER);
+                            setHighlight(JMHighlighter.LAYER1, fromOffset2, toOffset2, JMHighlightPainter.CHANGED_LIGHTER);
                         }
                     }
                 }
@@ -446,8 +480,8 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
             return line
                     ? JMHighlightPainter.ADDED_LINE
                     : isLastNewLine
-                    ? JMHighlightPainter.ADDED_NEWLINE
-                    : JMHighlightPainter.ADDED;
+                        ? JMHighlightPainter.ADDED_NEWLINE
+                        : JMHighlightPainter.ADDED;
         }
 
         private JMHighlightPainter getDeleteHighlightPainter(boolean line, boolean isLastNewLine) {
@@ -463,6 +497,12 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
         public abstract boolean isEmptyLine();
     }
 
+    /**
+     * Converted to flyweight
+     * 
+     * @author Rick Wellman
+     *
+     */
     class HighlightOriginal extends AbstractHighlight {
 
         public HighlightOriginal(JMDelta delta) {
@@ -478,6 +518,12 @@ public class FilePanel implements BufferDocumentChangeListenerIF, ConfigurationL
         }
     }
 
+    /**
+     * Converted to flyweight
+     * 
+     * @author Rick Wellman
+     *
+     */
     class HighlightRevised extends AbstractHighlight {
 
         public HighlightRevised(JMDelta delta) {

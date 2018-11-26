@@ -22,6 +22,9 @@ import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import jiconfont.swing.IconFontSwing;
+import jiconfont.icons.FontAwesome;
+
 import org.jmeld.settings.JMeldSettings;
 import org.jmeld.ui.JMeldPanel;
 import org.jmeld.ui.util.ImageUtil;
@@ -87,6 +90,8 @@ public class JMeld implements Runnable {
         if (settings.getEditor().isAntialiasEnabled()) {
             System.setProperty("swing.aatext", "true");
         }
+
+        IconFontSwing.register(FontAwesome.getIconFont());
 
         SwingUtilities.invokeLater(new JMeld(args));
     }

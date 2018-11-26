@@ -24,15 +24,15 @@ import java.io.File;
  *
  * @author  kees
  */
-public class SettingsPanel
-    extends SettingsPanelForm
-    implements ConfigurationListenerIF
-{
-  private DefaultListModel listModel;
-  private JMeldPanel mainPanel;
+@SuppressWarnings({"serial","rawtypes","unchecked"})
+public class SettingsPanel extends SettingsPanelForm implements ConfigurationListenerIF {
+	
+    private JMeldPanel mainPanel;
 
-  public SettingsPanel(JMeldPanel mainPanel)
-  {
+    private DefaultListModel listModel;
+  
+  public SettingsPanel(JMeldPanel mainPanel) {
+	  
     this.mainPanel = mainPanel;
 
     init();
@@ -41,8 +41,7 @@ public class SettingsPanel
     getConfiguration().addConfigurationListener(this);
   }
 
-  private void init()
-  {
+  private void init() {
     settingsPanel.setLayout(new CardLayout());
     for (Settings setting : Settings.values())
     {
@@ -164,56 +163,40 @@ public class SettingsPanel
     };
   }
 
-  public ListSelectionListener getSettingItemsAction()
-  {
-    return new ListSelectionListener()
-    {
-      public void valueChanged(ListSelectionEvent event)
-      {
-        CardLayout layout;
-        Settings settings;
+	public ListSelectionListener getSettingItemsAction() {
+		return new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent event) {
+				final Settings settings = (Settings) settingItems
+						.getSelectedValue();
+				final CardLayout layout = (CardLayout) settingsPanel
+						.getLayout();
+				layout.show(settingsPanel, settings.getName());
+			}
+		};
+	}
 
-        settings = (Settings) settingItems.getSelectedValue();
-        layout = (CardLayout) settingsPanel.getLayout();
-        layout.show(settingsPanel, settings.getName());
-      }
-    };
-  }
+	public void configurationChanged() {
+		initConfiguration();
+	}
 
-  public void configurationChanged()
-  {
-    initConfiguration();
-  }
+	private void initConfiguration() {
+		final JMeldSettings c = getConfiguration();
 
-  private void initConfiguration()
-  {
-    JMeldSettings c;
+		fileLabel.setText(c.getConfigurationFileName());
+		saveButton.setEnabled(c.isChanged());
+	}
 
-    c = getConfiguration();
+	public boolean checkSave() {
 
-    fileLabel.setText(c.getConfigurationFileName());
-    saveButton.setEnabled(c.isChanged());
-  }
+		if (getConfiguration().isChanged()) {
+			final SaveSettingsDialog dialog = new SaveSettingsDialog(mainPanel);
+			dialog.show();
+			if (dialog.isOK()) {
+				dialog.doSave();
+			}
+		}
 
-  public boolean checkSave()
-  {
-    SaveSettingsDialog dialog;
+		return true;
+	}
 
-    if (getConfiguration().isChanged())
-    {
-      dialog = new SaveSettingsDialog(mainPanel);
-      dialog.show();
-      if (dialog.isOK())
-      {
-        dialog.doSave();
-      }
-    }
-
-    return true;
-  }
-
-  private JMeldSettings getConfiguration()
-  {
-    return JMeldSettings.getInstance();
-  }
 }

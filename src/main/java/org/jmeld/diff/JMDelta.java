@@ -31,6 +31,11 @@ public class JMDelta {
     private JMRevision changeRevision;
 
     public JMDelta(JMChunk original, JMChunk revised) {
+    	this(null, original, revised);
+    }
+    
+    public JMDelta(JMRevision model, JMChunk original, JMChunk revised) {
+        this.revision = model;
         this.original = original;
         this.revised = revised;
 

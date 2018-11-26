@@ -6,21 +6,24 @@
 
 package org.jmeld.ui.settings;
 
+import org.jmeld.settings.JMeldSettings;
 import org.jmeld.ui.AbstractContentPanel;
 
 /**
  *
  * @author  kees
  */
-public class SettingsPanelForm
-    extends AbstractContentPanel
-{
+@SuppressWarnings({"serial","rawtypes","unchecked"})
+public class SettingsPanelForm extends AbstractContentPanel {
 
-  /** Creates new form SettingsPanel2 */
-  public SettingsPanelForm()
-  {
-    initComponents();
-  }
+	/** Creates new form SettingsPanel2 */
+	public SettingsPanelForm() {
+		initComponents();
+	}
+
+	final protected JMeldSettings getConfiguration() {
+		return JMeldSettings.getInstance();
+	}
 
   /** This method is called from within the constructor to
    * initialize the form.

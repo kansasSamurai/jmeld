@@ -21,18 +21,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans</groupId>
-            <artifactId>jemmy</artifactId>
-            <version>2.2.7.5</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <!-- Must be version 1.0.7, but it's not in maven repos -->
             <groupId>jgoodies</groupId>
             <artifactId>forms</artifactId>
@@ -80,6 +68,33 @@
             <artifactId>swingx</artifactId>
             <version>1.6.1</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.github.jiconfont</groupId>
+            <artifactId>jiconfont-swing</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.github.jiconfont</groupId>
+            <artifactId>jiconfont-font_awesome</artifactId>
+            <version>4.7.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8.2</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.netbeans</groupId>
+            <artifactId>jemmy</artifactId>
+            <version>2.2.7.5</version>
+            <scope>test</scope>
+        </dependency>
+        
     </dependencies>
 
     <build>

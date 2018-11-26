@@ -28,33 +28,30 @@ import java.awt.event.ActionListener;
  *
  * @author  kees
  */
-public class EditorSettingsPanel
-    extends EditorSettingsForm
-    implements ConfigurationListenerIF
-{
-  private static JDialog colorDialog;
-  private static JColorChooser colorChooser;
-  private boolean originalAntialias;
+@SuppressWarnings({"serial","rawtypes","unchecked"})
+public class EditorSettingsPanel extends EditorSettingsForm implements ConfigurationListenerIF {
 
-  public EditorSettingsPanel()
-  {
+	private static JDialog colorDialog;
+    private static JColorChooser colorChooser;
+    private boolean originalAntialias;
+
+  public EditorSettingsPanel() {
+	  
     originalAntialias = getEditorSettings().isAntialiasEnabled();
 
     initConfiguration();
+    
     init();
-
+    
     JMeldSettings.getInstance().addConfigurationListener(this);
   }
 
-  private void init()
-  {
+  private void init() {
+	  
     // ignore:
-    ignoreWhitespaceAtBeginCheckBox
-        .addActionListener(getIgnoreWhitespaceAtBeginAction());
-    ignoreWhitespaceInBetweenCheckBox
-        .addActionListener(getIgnoreWhitespaceInBetweenAction());
-    ignoreWhitespaceAtEndCheckBox
-        .addActionListener(getIgnoreWhitespaceAtEndAction());
+    ignoreWhitespaceAtBeginCheckBox .addActionListener(getIgnoreWhitespaceAtBeginAction());
+    ignoreWhitespaceInBetweenCheckBox .addActionListener(getIgnoreWhitespaceInBetweenAction());
+    ignoreWhitespaceAtEndCheckBox .addActionListener(getIgnoreWhitespaceAtEndAction());
     ignoreEOLCheckBox.addActionListener(getIgnoreEOLAction());
     ignoreBlankLinesCheckBox.addActionListener(getIgnoreBlankLinesAction());
     ignoreCaseCheckBox.addActionListener(getIgnoreCaseAction());
@@ -66,16 +63,14 @@ public class EditorSettingsPanel
     tabSizeSpinner.addChangeListener(getTabSizeChangeListener());
     showLineNumbersCheckBox.addActionListener(getShowLineNumbersAction());
     lookAndFeelComboBox.setModel(getLookAndFeelModel());
-    lookAndFeelComboBox.setSelectedItem(LookAndFeelManager.getInstance()
-            .getInstalledLookAndFeelName());
+    lookAndFeelComboBox.setSelectedItem(LookAndFeelManager.getInstance() .getInstalledLookAndFeelName());
     lookAndFeelComboBox.addActionListener(getLookAndFeelAction());
 
     // Colors:
     colorAddedButton.addActionListener(getColorAddedAction());
     colorDeletedButton.addActionListener(getColorDeletedAction());
     colorChangedButton.addActionListener(getColorChangedAction());
-    restoreOriginalColorsButton
-        .addActionListener(getRestoreOriginalColorsAction());
+    restoreOriginalColorsButton .addActionListener(getRestoreOriginalColorsAction());
 
     // Font:
     defaultFontRadioButton.addActionListener(getDefaultFontAction());
@@ -83,27 +78,24 @@ public class EditorSettingsPanel
     fontChooserButton.addActionListener(getFontChooserAction());
 
     // File encoding:
-    defaultEncodingRadioButton.setText(defaultEncodingRadioButton.getText()
+    defaultEncodingRadioButton
+    	.setText(defaultEncodingRadioButton.getText()
             + " ("
-            + CharsetDetector.getInstance()
-            .getDefaultCharset() + ")");
+            + CharsetDetector.getInstance() .getDefaultCharset() 
+            + ")");
 
     defaultEncodingRadioButton.addActionListener(getDefaultEncodingAction());
     detectEncodingRadioButton.addActionListener(getDetectEncodingAction());
     specificEncodingRadioButton.addActionListener(getSpecificEncodingAction());
-    specificEncodingComboBox.setModel(new DefaultComboBoxModel(CharsetDetector
-            .getInstance().getCharsetNameList().toArray()));
-    specificEncodingComboBox.setSelectedItem(getEditorSettings()
-            .getSpecificFileEncodingName());
+    specificEncodingComboBox.setModel(new DefaultComboBoxModel(CharsetDetector .getInstance().getCharsetNameList().toArray()));
+    specificEncodingComboBox.setSelectedItem(getEditorSettings() .getSpecificFileEncodingName());
     specificEncodingComboBox.addActionListener(getSpecificEncodingNameAction());
 
     // Toolbar appearance:
     toolbarButtonIconComboBox.setModel(getToolbarButtonIconModel());
-    toolbarButtonIconComboBox.setSelectedItem(getEditorSettings()
-        .getToolbarButtonIcon());
+    toolbarButtonIconComboBox.setSelectedItem(getEditorSettings() .getToolbarButtonIcon());
     toolbarButtonIconComboBox.addActionListener(getToolbarButtonIconAction());
-    toolbarButtonTextEnabledCheckBox
-        .addActionListener(getToolbarButtonTextEnabledAction());
+    toolbarButtonTextEnabledCheckBox .addActionListener(getToolbarButtonTextEnabledAction());
     showLevensteinCheckBox.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent evt) {
             getEditorSettings().setShowLevenstheinEditor(
@@ -127,8 +119,7 @@ public class EditorSettingsPanel
 
     //Tokenizer Type
       typeTokenizerComboBox.setModel(getTypeTokenizerModel());
-      typeTokenizerComboBox.setSelectedItem(getEditorSettings()
-              .getTypeTokenizerName());
+      typeTokenizerComboBox.setSelectedItem(getEditorSettings() .getTypeTokenizerName());
       typeTokenizerComboBox.addActionListener(getTypeTokenizerAction());
 
   }
@@ -580,13 +571,11 @@ public class EditorSettingsPanel
     return JMeldSettings.getInstance().getEditor();
   }
 
-  private Font getEditorFont()
-  {
-    Font font;
-
-    font = getEditorSettings().getFont();
+  private Font getEditorFont() {
+    Font font = getEditorSettings().getFont();
     font = font == null ? FontUtil.defaultTextAreaFont : font;
 
     return font;
   }
+  
 }

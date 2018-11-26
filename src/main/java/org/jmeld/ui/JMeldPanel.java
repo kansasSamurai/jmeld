@@ -17,6 +17,7 @@
 package org.jmeld.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
@@ -43,6 +44,9 @@ import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+
+import jiconfont.icons.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 
 import org.jmeld.Version;
 import org.jmeld.settings.JMeldSettings;
@@ -284,6 +288,8 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         final ToolBarBuilder builder = new ToolBarBuilder(tb);
 
         button = WidgetFactory.getToolBarButton(getAction(actions.NEW));
+        button.setRolloverEnabled(true);
+        button.setRolloverIcon(IconFontSwing.buildIcon(FontAwesome.FILE_O, 22, Color.black));
         builder.addButton(button);
 
         button = WidgetFactory.getToolBarButton(getAction(actions.SAVE));
@@ -299,13 +305,13 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
 
         builder.addSpring();
 
-        button = WidgetFactory.getToolBarButton(getAction(actions.SETTINGS));
-        builder.addButton(button);
-
         button = WidgetFactory.getToolBarButton(getAction(actions.HELP));
         builder.addButton(button);
 
         button = WidgetFactory.getToolBarButton(getAction(actions.ABOUT));
+        builder.addButton(button);
+
+        button = WidgetFactory.getToolBarButton(getAction(actions.SETTINGS));
         builder.addButton(button);
 
         return tb;
@@ -339,11 +345,11 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         actionHandler = new ActionHandler();
 
         action = actionHandler.createAction(this, actions.NEW);
-        action.setIcon("stock_new");
+        action.setIcon(FontAwesome.FILE_O); // .setIcon("stock_new");
         action.setToolTip("Merge 2 new files");
 
         action = actionHandler.createAction(this, actions.SAVE);
-        action.setIcon("stock_save");
+        action.setIcon(FontAwesome.FLOPPY_O, null, 22); // .setIcon("stock_save");
         action.setToolTip("Save the changed files");
         
         if (!STANDALONE_INSTALLKEY_OPTION.isEnabled()) {
@@ -351,14 +357,13 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         }
 
         action = actionHandler.createAction(this, actions.UNDO);
-        action.setIcon("stock_undo");
+        action.setIcon(FontAwesome.ARROW_CIRCLE_O_LEFT, null, 22); // .setIcon("stock_undo");
         action.setToolTip("Undo the latest change");
-        
         installKey("control Z", action);
         installKey("control Y", action);
 
         action = actionHandler.createAction(this, actions.REDO);
-        action.setIcon("stock_redo");
+        action.setIcon(FontAwesome.ARROW_CIRCLE_O_RIGHT, null, 22); // .setIcon("stock_redo");
         action.setToolTip("Redo the latest change");
         installKey("control R", action);
 
@@ -424,14 +429,14 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
 
         if (!STANDALONE_INSTALLKEY_OPTION.isEnabled()) {
             action = actionHandler.createAction(this, actions.HELP);
-            action.setIcon("stock_help-agent");
+            action.setIcon(FontAwesome.COMMENT_O); // .setIcon("stock_help-agent");
             installKey("F1", action);
 
             action = actionHandler.createAction(this, actions.ABOUT);
-            action.setIcon("stock_about");
+            action.setIcon(FontAwesome.INFO_CIRCLE, null, 20); // .setIcon("stock_about");
 
             action = actionHandler.createAction(this, actions.SETTINGS);
-            action.setIcon("stock_preferences");
+            action.setIcon(FontAwesome.COGS);// .setIcon("stock_preferences");
             action.setToolTip("Settings");
 
             action = actionHandler.createAction(this, actions.EXIT);
@@ -770,7 +775,8 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
 
         final AbstractContentPanel content = new SettingsPanel(this);
         content.setId(contentId);
-        getTabbedPane().addTab("Settings", ImageUtil .getSmallImageIcon("stock_preferences"), content);
+
+        getTabbedPane().addTab("Settings", ImageUtil.getSmallImageIcon("stock_preferences"), content);
         getTabbedPane().setSelectedComponent(content);
     }
 

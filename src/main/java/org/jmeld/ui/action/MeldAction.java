@@ -19,13 +19,18 @@ package org.jmeld.ui.action;
 import org.jmeld.ui.util.ImageUtil;
 
 import javax.swing.*;
+
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-public class MeldAction
-    extends AbstractAction
-{
+import jiconfont.icons.FontAwesome;
+import jiconfont.swing.IconFontSwing;
+
+@SuppressWarnings("serial")
+public class MeldAction extends AbstractAction {
+	
   // class variables:
   //   backwards compatible with jdk1.5
   public static String LARGE_ICON_KEY = "SwingLargeIconKey";
@@ -36,8 +41,8 @@ public class MeldAction
   private Method isActionEnabledMethod;
   private ActionHandler actionHandler;
 
-  MeldAction(ActionHandler actionHandler, Object object, String name)
-  {
+  MeldAction(ActionHandler actionHandler, Object object, String name) {
+	  
     super(name);
 
     this.actionHandler = actionHandler;
@@ -45,105 +50,93 @@ public class MeldAction
     initMethods();
   }
 
-  private void initMethods()
-  {
-    try
-    {
+  private void initMethods() {
+    try {
       actionMethod = object.getClass().getMethod("do" + getName(),
         ActionEvent.class);
-    }
-    catch (Exception ex)
-    {
+    } catch (Exception ex) {
       ex.printStackTrace();
       System.exit(1);
     }
 
-    try
-    {
+    try {
       // This method is not mandatory! 
       //   If it is not available the method is always enabled.
       isActionEnabledMethod = object.getClass().getMethod(
         "is" + getName() + "Enabled");
+    } catch (NoSuchMethodException ex) {
+    	// Intentionally empty?
     }
-    catch (NoSuchMethodException ex)
-    {
-    }
+    
   }
 
-  public String getName()
-  {
+  public String getName() {
     return (String) getValue(NAME);
   }
 
-  public void setToolTip(String toolTip)
-  {
+  public void setToolTip(String toolTip) {
     putValue(SHORT_DESCRIPTION, toolTip);
   }
 
-  public void setIcon(String iconName)
-  {
+  public void setIcon(FontAwesome faicon) {
+	  this.setIcon(faicon, 12, 18);
+  }
+	  
+  public void setIcon(FontAwesome faicon, Integer small, Integer large) {
+  	  putValue(SMALL_ICON, IconFontSwing.buildIcon(faicon, small == null ? 12 : small, Color.black));
+	  putValue(LARGE_ICON_KEY, IconFontSwing.buildIcon(faicon, large == null ? 18 : large, Color.black));
+  }
+	  
+  public void setIcon(Icon icon) {
+	putValue(SMALL_ICON, icon);
+	putValue(LARGE_ICON_KEY, icon);
+  }
+  
+  public void setIcon(String iconName) {
     putValue(SMALL_ICON, ImageUtil.getSmallImageIcon(iconName));
     putValue(LARGE_ICON_KEY, ImageUtil.getImageIcon(iconName));
   }
 
-  public ImageIcon getTransparentSmallImageIcon()
-  {
+  public ImageIcon getTransparentSmallImageIcon() {
     return ImageUtil.createTransparentIcon((ImageIcon) getValue(SMALL_ICON));
   }
 
-  public void actionPerformed(ActionEvent ae)
-  {
-    if (object == null || actionMethod == null)
-    {
+  public void actionPerformed(ActionEvent ae) {
+    if (object == null || actionMethod == null) {
       System.out.println("setActionCommand() has not been executed!");
       return;
     }
 
-    try
-    {
+    try {
       actionMethod.setAccessible(true);
       actionMethod.invoke(object, ae);
 
       actionHandler.checkActions();
-    }
-    catch (IllegalAccessException ex)
-    {
+    } catch (IllegalAccessException ex) {
       ex.printStackTrace();
-    }
-    catch (IllegalArgumentException ex)
-    {
+    } catch (IllegalArgumentException ex) {
       ex.printStackTrace();
-    }
-    catch (InvocationTargetException ex)
-    {
+    } catch (InvocationTargetException ex) {
       ex.printStackTrace();
     }
   }
 
-  public boolean isActionEnabled()
-  {
-    if (object == null || isActionEnabledMethod == null)
-    {
+  public boolean isActionEnabled() {
+    if (object == null || isActionEnabledMethod == null) {
       return true;
     }
 
-    try
-    {
+    try {
       return (Boolean) isActionEnabledMethod.invoke(object);
-    }
-    catch (IllegalAccessException ex)
-    {
+    } catch (IllegalAccessException ex) {
       ex.printStackTrace();
-    }
-    catch (IllegalArgumentException ex)
-    {
+    } catch (IllegalArgumentException ex) {
       ex.printStackTrace();
-    }
-    catch (InvocationTargetException ex)
-    {
+    } catch (InvocationTargetException ex) {
       ex.printStackTrace();
     }
 
     return true;
   }
+
 }

@@ -25,85 +25,75 @@ import java.awt.image.ImageFilter;
 import java.awt.image.ImageProducer;
 import java.net.URL;
 
-public class ImageUtil
-{
-  public static synchronized ImageIcon getSmallImageIcon(String iconName)
-  {
+/**
+ * 
+ * @author jmeld-legacy
+ * @author Rick Wellman
+ *
+ */
+public class ImageUtil {
+	
+  public static synchronized ImageIcon getSmallImageIcon(String iconName) {
     return getImageIcon("16x16/" + iconName + "-16");
   }
 
-  public static synchronized ImageIcon getLargeImageIcon(String iconName)
-  {
+  public static synchronized ImageIcon getLargeImageIcon(String iconName) {
     return getImageIcon("32x32/" + iconName);
   }
 
-  public static synchronized ImageIcon getImageIcon(String iconName)
-  {
-    ImageIcon icon;
-    URL url;
+  public static synchronized ImageIcon getImageIcon(String iconName) {
 
+	// The incoming name is "raw"... decorate with path and extension
     iconName = "images/" + iconName + ".png";
 
-    url = ResourceLoader.getResource(iconName);
-    if (url == null)
-    {
+    final URL url  = ResourceLoader.getResource(iconName);
+    if (url == null) {
       return null;
     }
 
     return new ImageIcon(url);
   }
 
-  public static ImageIcon createDarkerIcon(ImageIcon icon)
-  {
+  public static ImageIcon createDarkerIcon(ImageIcon icon) {
     return createDarkerIcon(icon, -0.10f);
   }
 
   /** Create a x% Transparent icon */
-  public static ImageIcon createDarkerIcon(ImageIcon icon, float percentage)
-  {
+  public static ImageIcon createDarkerIcon(ImageIcon icon, float percentage) {
     return createIcon(icon, new BrightnessFilter(percentage));
   }
 
   /** Create a 20% Transparent icon */
-  public static ImageIcon createTransparentIcon(ImageIcon icon)
-  {
+  public static ImageIcon createTransparentIcon(ImageIcon icon) {
     return createTransparentIcon(icon, 20);
   }
 
   /** Create a x% Transparent icon */
-  public static ImageIcon createTransparentIcon(ImageIcon icon, int percentage)
-  {
+  public static ImageIcon createTransparentIcon(ImageIcon icon, int percentage) {
     return createIcon(icon, new TransparentFilter(percentage));
   }
 
   /** Create a new icon which is filtered by some ImageFilter */
-  private static synchronized ImageIcon createIcon(ImageIcon icon,
-      ImageFilter filter)
-  {
-    ImageProducer ip;
-    Image image;
-    MediaTracker tracker;
-
-    if (icon == null)
-    {
+  private static synchronized ImageIcon createIcon(ImageIcon icon, ImageFilter filter) {
+	  
+    if (icon == null) {
       return null;
     }
 
-    ip = new FilteredImageSource(icon.getImage().getSource(), filter);
-    image = Toolkit.getDefaultToolkit().createImage(ip);
+    final ImageProducer ip = new FilteredImageSource(icon.getImage().getSource(), filter);
+    final Image image = Toolkit.getDefaultToolkit().createImage(ip);
 
-    tracker = new MediaTracker(new JPanel());
+    final MediaTracker tracker = new MediaTracker(new JPanel());
     tracker.addImage(image, 1);
-    try
-    {
+    
+    try {
       tracker.waitForID(1);
-    }
-    catch (InterruptedException e)
-    {
+    } catch (InterruptedException e) {
       e.printStackTrace();
       return null;
     }
 
     return new ImageIcon(image);
   }
+  
 }

@@ -7,7 +7,12 @@ import org.jmeld.util.node.JMDiffNode;
 import org.jmeld.util.node.JMDiffNodeFactory;
 
 import javax.swing.*;
+
+import java.awt.Color;
 import java.io.File;
+
+import jiconfont.icons.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 
 /**
 * User: alberto
@@ -123,7 +128,7 @@ public class FileComparison extends SwingWorker<String, Object> {
                     panel = new BufferDiffPanel(mainPanel);
                     panel.setId(contentId);
                     panel.setDiffNode(diffNode);
-                    mainPanel.getTabbedPane().addTab(panel.getTitle(), ImageUtil.getSmallImageIcon("stock_new"), panel);
+                    mainPanel.getTabbedPane().addTab(panel.getTitle(), IconFontSwing.buildIcon(FontAwesome.FILE_TEXT, 12, Color.black), panel);
                     if (!openInBackground) {
                         mainPanel.getTabbedPane().setSelectedComponent(panel);
                     }

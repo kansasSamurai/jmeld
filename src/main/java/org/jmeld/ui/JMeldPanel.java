@@ -289,13 +289,13 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
 
         button = WidgetFactory.getToolBarButton(getAction(actions.NEW));
         button.setRolloverEnabled(true);
-        button.setRolloverIcon(IconFontSwing.buildIcon(FontAwesome.FILE_O, 22, Color.black));
-        builder.addButton(button);
-
-        button = WidgetFactory.getToolBarButton(getAction(actions.SAVE));
+        button.setRolloverIcon(IconFontSwing.buildIcon(FontAwesome.FILE_TEXT, 18, Color.black));
         builder.addButton(button);
 
         builder.addSeparator();
+
+        button = WidgetFactory.getToolBarButton(getAction(actions.SAVE));
+        builder.addButton(button);
 
         button = WidgetFactory.getToolBarButton(getAction(actions.UNDO));
         builder.addButton(button);
@@ -303,13 +303,15 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         button = WidgetFactory.getToolBarButton(getAction(actions.REDO));
         builder.addButton(button);
 
-        builder.addSpring();
+        builder.addSeparator();
 
         button = WidgetFactory.getToolBarButton(getAction(actions.HELP));
         builder.addButton(button);
 
         button = WidgetFactory.getToolBarButton(getAction(actions.ABOUT));
         builder.addButton(button);
+
+        builder.addSpring();
 
         button = WidgetFactory.getToolBarButton(getAction(actions.SETTINGS));
         builder.addButton(button);
@@ -776,7 +778,8 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         final AbstractContentPanel content = new SettingsPanel(this);
         content.setId(contentId);
 
-        getTabbedPane().addTab("Settings", ImageUtil.getSmallImageIcon("stock_preferences"), content);
+        // TODO replace with new icon, ImageUtil.getSmallImageIcon("stock_preferences")
+        getTabbedPane().addTab("Settings", IconFontSwing.buildIcon(FontAwesome.COG, 12, Color.black) , content);
         getTabbedPane().setSelectedComponent(content);
     }
 

@@ -65,7 +65,7 @@ public class LineNumberBarDialog extends AbstractBarDialog {
     setLayout(new FlowLayout(FlowLayout.LEADING));
 
     // Incremental search:
-    lineNumberField = new JTextField(7);
+    lineNumberField = new JTextField(6);
     lineNumberField.addKeyListener(getSearchKeyAction());
 
     add(Box.createHorizontalStrut(5));

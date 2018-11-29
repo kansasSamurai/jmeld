@@ -1,18 +1,33 @@
-/*
+/* 
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
    JMeld is a visual diff and merge tool.
-   Copyright (C) 2007  Kees Kuip
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
+   
  */
 package org.jmeld.ui.text;
 
@@ -30,6 +45,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 
+ * @author jmeld-legacy
+ * @author Rick Wellman
+ *
+ */
 public abstract class AbstractBufferDocument implements BufferDocumentIF, DocumentListener {
 
     private String name;
@@ -41,13 +62,19 @@ public abstract class AbstractBufferDocument implements BufferDocumentIF, Docume
     private List<BufferDocumentChangeListenerIF> listeners;
 
     // Variables to detect if this document has been changed (and needs to be saved!)
-    private boolean changed;
-    private int originalLength;
     private int digest;
+    private int originalLength;
+    private boolean changed;
 
     public AbstractBufferDocument() {
         listeners = new ArrayList<BufferDocumentChangeListenerIF>();
     }
+
+    abstract int getBufferSize();
+
+    abstract public Reader getReader() throws JMeldException;
+
+    abstract Writer getWriter() throws JMeldException;
 
     public void addChangeListener(BufferDocumentChangeListenerIF listener) {
         listeners.add(listener);
@@ -56,14 +83,6 @@ public abstract class AbstractBufferDocument implements BufferDocumentIF, Docume
     public void removeChangeListener(BufferDocumentChangeListenerIF listener) {
         listeners.remove(listener);
     }
-
-    abstract int getBufferSize();
-
-    abstract public Reader getReader()
-            throws JMeldException;
-
-    abstract Writer getWriter()
-            throws JMeldException;
 
     protected void setName(String name) {
         this.name = name;
@@ -162,25 +181,22 @@ public abstract class AbstractBufferDocument implements BufferDocumentIF, Docume
         return (-searchIndex) - 1;
     }
 
-    public void read()
-            throws JMeldException {
+    @Override
+    public void read() throws JMeldException {
         try {
-            Reader reader;
-            StopWatch stopWatch;
 
             if (document != null) {
                 document.removeDocumentListener(this);
             }
 
-            stopWatch = new StopWatch();
-            stopWatch.start();
-            System.out.println("before read : " + this);
+            final StopWatch stopWatch = new StopWatch();
+            stopWatch.start(); System.out.println("before read : " + this);
 
             content = new MyGapContent(getBufferSize() + 500);
             document = new PlainDocument(content);
 
-            reader = getReader();
-            new DefaultEditorKit().read(reader, document, 0);
+            final Reader reader = getReader();
+                new DefaultEditorKit().read(reader, document, 0);
             reader.close();
 
             System.out.println("create document took " + stopWatch.getElapsedTime());
@@ -190,11 +206,11 @@ public abstract class AbstractBufferDocument implements BufferDocumentIF, Docume
 
             initLines();
             initDigest();
+            
         } catch (JMeldException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new JMeldException("Problem reading document (name=" + getName()
-                    + ") in buffer", ex);
+            throw new JMeldException("Problem reading document (name=" + getName() + ") in buffer", ex);
         }
     }
 
@@ -366,8 +382,8 @@ public abstract class AbstractBufferDocument implements BufferDocumentIF, Docume
         }
     }
 
-    public class Line
-            implements Comparable {
+    public class Line implements Comparable {
+        
         Element element;
 
         Line(Element element) {
@@ -383,8 +399,7 @@ public abstract class AbstractBufferDocument implements BufferDocumentIF, Docume
         }
 
         public void print() {
-            System.out.printf("[%08d]: %s\n", getOffset(), StringUtil
-                    .replaceNewLines(toString()));
+            System.out.printf("[%08d]: %s\n", getOffset(), StringUtil .replaceNewLines(toString()));
         }
 
         @Override
@@ -449,14 +464,17 @@ public abstract class AbstractBufferDocument implements BufferDocumentIF, Docume
         }
     }
 
+    @Override
     public void changedUpdate(DocumentEvent de) {
         documentChanged(de);
     }
 
+    @Override
     public void insertUpdate(DocumentEvent de) {
         documentChanged(de);
     }
 
+    @Override
     public void removeUpdate(DocumentEvent de) {
         documentChanged(de);
     }
@@ -474,30 +492,22 @@ public abstract class AbstractBufferDocument implements BufferDocumentIF, Docume
     }
 
     private void documentChanged(DocumentEvent de) {
-        boolean newChanged;
-        int newDigest;
-        int startLine;
-        int numberOfLinesChanged;
-        JMDocumentEvent jmde;
-        String text;
-
-        jmde = new JMDocumentEvent(this, de);
-        numberOfLinesChanged = 0;
+        final JMDocumentEvent jmde = new JMDocumentEvent(this, de);
 
         if (lineArray != null) {
-            // Make large documents perform well!
+            // Make large documents perform well! TODO ... so... what does this do? notice 'text' is not used?
             if (de.getType() == DocumentEvent.EventType.INSERT) {
                 try {
-                    text = document.getText(de.getOffset(), de.getLength());
+                    String text = document.getText(de.getOffset(), de.getLength());
                 } catch (BadLocationException ex) {
                 }
             }
 
-            numberOfLinesChanged = getLines().length;
+            int numberOfLinesChanged = getLines().length;
             reset();
             numberOfLinesChanged = getLines().length - numberOfLinesChanged;
 
-            startLine = getLineForOffset(de.getOffset() + 1);
+            final int startLine = getLineForOffset(de.getOffset() + 1);
             if (startLine < 0) {
                 System.out.println("haha");
             }
@@ -506,13 +516,12 @@ public abstract class AbstractBufferDocument implements BufferDocumentIF, Docume
             jmde.setNumberOfLines(numberOfLinesChanged);
         }
 
-        newChanged = false;
+        boolean newChanged = false;
         if (document.getLength() != originalLength) {
             newChanged = true;
         } else {
-            // Calculate the digest in order to see of a buffer has been
-            //   changed (and should be saved)
-            newDigest = createDigest();
+            // Calculate the digest in order to see of a buffer has been changed (and should be saved)
+            final int newDigest = createDigest();
             if (newDigest != digest) {
                 newChanged = true;
             }
@@ -542,4 +551,5 @@ public abstract class AbstractBufferDocument implements BufferDocumentIF, Docume
     public String toString() {
         return "Document[name=" + name + "]";
     }
+    
 }

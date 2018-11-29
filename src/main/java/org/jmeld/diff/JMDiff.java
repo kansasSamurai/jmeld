@@ -1,18 +1,33 @@
-/*
+/* 
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
    JMeld is a visual diff and merge tool.
-   Copyright (C) 2007  Kees Kuip
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
+   
  */
 package org.jmeld.diff;
 
@@ -24,21 +39,28 @@ import org.jmeld.util.file.*;
 import java.util.*;
 import java.nio.*;
 
-public class JMDiff
-{
+/**
+ * 
+ * @author jmeld-legacy
+ * @author Rick Wellman
+ *
+ */
+public class JMDiff {
+    
   public static int BUFFER_SIZE=100000;
+  
   // Class variables:
-  // Allocate a charBuffer once for performance. The charbuffer is used to
-  //   store a 'line' without it's ignored characters. 
+
+  // Allocate a charBuffer once for performance. The charbuffer is used to store a 'line' without it's ignored characters. 
   static final private CharBuffer inputLine = CharBuffer.allocate(BUFFER_SIZE);
   static final private CharBuffer outputLine = CharBuffer.allocate(BUFFER_SIZE);
+  
   // Instance variables:
   private List<JMDiffAlgorithmIF> algorithms;
 
-  public JMDiff()
-  {
-    MyersDiff myersDiff;
-
+  public JMDiff() {
+      
+      this.algorithms = new ArrayList<JMDiffAlgorithmIF>();
     // Timing/Memory (msec/Mb):
     //                                             Myers  Eclipse GNU Hunt
     //  ================================================================================
@@ -48,12 +70,10 @@ public class JMDiff
     //  2 Medium different files (10673406 lines)  216    922     632 >300000
     //  2 Equal files             (1778583 lines)  32     55      133 24632
     //  2 Equal files            (10673406 lines)  121    227     581 >60000
-    myersDiff = new MyersDiff();
-    myersDiff.checkMaxTime(true);
 
-    // MyersDiff is the fastest but can be very slow when 2 files
-    // are very different.
-    algorithms = new ArrayList<JMDiffAlgorithmIF>();
+    // MyersDiff is the fastest but can be very slow when 2 files are very different.
+    MyersDiff myersDiff = new MyersDiff();
+    myersDiff.checkMaxTime(true);
     //algorithms.add(myersDiff);
 
     // EclipseDiff looks like Myersdiff but is slower.
@@ -62,231 +82,191 @@ public class JMDiff
 
     // HuntDiff (from netbeans) is very, very slow
     //algorithms.add(new HuntDiff());
+    
   }
 
-  public JMRevision diff(List<String> a, List<String> b, Ignore ignore)
-      throws JMeldException
-  {
-    if (a == null)
-    {
-      a = Collections.emptyList();
-    }
-    if (b == null)
-    {
-      b = Collections.emptyList();
-    }
-    return diff(a.toArray(), b.toArray(), ignore);
-  }
-
-  public JMRevision diff(Object[] a, Object[] b, Ignore ignore)
-      throws JMeldException
-  {
-    JMRevision revision;
-    StopWatch sp;
-    boolean filtered;
-    Object[] org;
-    Object[] rev;
-    long filteredTime;
-
-    org = a;
-    rev = b;
-
-    if (org == null)
-    {
-      org = new Object[] {};
-    }
-    if (rev == null)
-    {
-      rev = new Object[] {};
+    public JMRevision diff(List<String> a, List<String> b, Ignore ignore) throws JMeldException {
+        if (a == null) {
+            a = Collections.emptyList();
+        }
+        if (b == null) {
+            b = Collections.emptyList();
+        }
+        return diff(a.toArray(), b.toArray(), ignore);
     }
 
-      filtered = org instanceof AbstractBufferDocument.Line[]
-              && rev instanceof AbstractBufferDocument.Line[];
-
-    sp = new StopWatch();
-    sp.start();
-
-    if (filtered)
-    {
-      org = filter(ignore, org);
-      rev = filter(ignore, rev);
-    }
-
-    filteredTime = sp.getElapsedTime();
-
-    for (JMDiffAlgorithmIF algorithm : algorithms)
-    {
-      try
-      {
-        revision = algorithm.diff(org, rev);
-        revision.setIgnore(ignore);
-        revision.update(a, b);
-//        revision.filter();
-        if (filtered)
-        {
-          adjustRevision(revision, a, (JMString[]) org, b, (JMString[]) rev);
+    public JMRevision diff(Object[] a, Object[] b, Ignore ignore) throws JMeldException {
+        
+        Object[] org = a;
+        if (org == null) {
+            org = new Object[] {};
         }
 
-        if (a.length > 1000)
-        {
-          System.out.println("diff took " + sp.getElapsedTime()
-                             + " msec. [filter=" + filteredTime + " msec]["
-                             + algorithm.getClass() + "]");
+        Object[] rev = b;
+        if (rev == null) {
+            rev = new Object[] {};
         }
 
-        return revision;
-      }
-      catch (JMeldException ex)
-      {
-        if (ex.getCause() instanceof MaxTimeExceededException)
-        {
-          System.out.println("Time exceeded for " + algorithm.getClass()
-                             + ": try next algorithm");
-        }
-        else
-        {
-          throw ex;
-        }
-      }
-    }
+        final boolean filtered = org instanceof AbstractBufferDocument.Line[] && rev instanceof AbstractBufferDocument.Line[];
+        final StopWatch sp = new StopWatch(); {
+            sp.start();
+    
+            if (filtered) {
+                org = filter(ignore, org);
+                rev = filter(ignore, rev);
+            }
+        } long filteredTime = sp.getElapsedTime();
 
-    return null;
-  }
+        // This is setup to iterate over the list but in production code there is only one item in the list (EclipseDiff)
+        for (JMDiffAlgorithmIF algorithm : algorithms) {
+            try {
+                final JMRevision revision = algorithm.diff(org, rev);                
+                revision.setIgnore(ignore);
+                revision.update(a, b);
+                // revision.filter();
+                
+                if (filtered) {
+                    this.adjustRevision(revision, a, (JMString[]) org, b, (JMString[]) rev);
+                }
 
-  private void adjustRevision(JMRevision revision, Object[] orgArray,
-      JMString[] orgArrayFiltered, Object[] revArray,
-      JMString[] revArrayFiltered)
-  {
-    JMChunk chunk;
-    int anchor;
-    int size;
-    int index;
+                if (a.length > 1000) {
+                    System.out.println("diff took " + sp.getElapsedTime() + " msec. [filter=" + filteredTime + " msec]["
+                            + algorithm.getClass() + "]");
+                }
 
-    for (JMDelta delta : revision.getDeltas())
-    {
-      chunk = delta.getOriginal();
-      //System.out.print("  original=" + chunk);
-      index = chunk.getAnchor();
-      if (index < orgArrayFiltered.length)
-      {
-        anchor = orgArrayFiltered[index].lineNumber;
-      }
-      else
-      {
-        anchor = orgArray.length;
-      }
-
-      size = chunk.getSize();
-      if (size > 0)
-      {
-        index += chunk.getSize() - 1;
-        if (index < orgArrayFiltered.length)
-        {
-          size = orgArrayFiltered[index].lineNumber - anchor + 1;
-        }
-        /*
-           index += chunk.getSize();
-           if (index < orgArrayFiltered.length)
-           {
-             size = orgArrayFiltered[index].lineNumber - anchor;
-           }
-         */
-      }
-      chunk.setAnchor(anchor);
-      chunk.setSize(size);
-      //System.out.println(" => " + chunk);
-
-      chunk = delta.getRevised();
-      //System.out.print("  revised=" + chunk);
-      index = chunk.getAnchor();
-      if (index < revArrayFiltered.length)
-      {
-        //System.out.print(" [index=" + index + ", text="
-        //+ revArrayFiltered[index].s + "]");
-        anchor = revArrayFiltered[index].lineNumber;
-      }
-      else
-      {
-        anchor = revArray.length;
-      }
-      size = chunk.getSize();
-      if (size > 0)
-      {
-        index += chunk.getSize() - 1;
-        if (index < revArrayFiltered.length)
-        {
-          size = revArrayFiltered[index].lineNumber - anchor + 1;
-        }
-        /*
-           index += chunk.getSize();
-           if (index < revArrayFiltered.length)
-           {
-             size = revArrayFiltered[index].lineNumber - anchor;
-           }
-         */
-      }
-      chunk.setAnchor(anchor);
-      chunk.setSize(size);
-      //System.out.println(" => " + chunk);
-    }
-  }
-
-  private JMString[] filter(Ignore ignore, Object[] array)
-  {
-    List<JMString> result;
-    JMString jms;
-    int lineNumber;
-
-    synchronized (inputLine)
-    {
-      //System.out.println("> start");
-      result = new ArrayList<JMString>(array.length);
-      lineNumber = -1;
-      for (Object o : array)
-      {
-        lineNumber++;
-
-        inputLine.clear();
-        inputLine.put(o.toString());
-        CompareUtil.removeIgnoredChars(inputLine, ignore, outputLine);
-        if (outputLine.remaining() == 0)
-        {
-          continue;
+                return revision;
+            } catch (JMeldException ex) {
+                if (ex.getCause() instanceof MaxTimeExceededException) {
+                    System.out.println("Time exceeded for " + algorithm.getClass() + ": try next algorithm");
+                } else {
+                    throw ex;
+                }
+            }
         }
 
-        jms = new JMString();
-        jms.s = outputLine.toString();
-        jms.lineNumber = lineNumber;
-        result.add(jms);
-
-        //System.out.println("  " + jms);
-      }
+        return null;
     }
 
-    return result.toArray(new JMString[result.size()]);
-  }
+    /**
+     * 
+     * @param revision
+     * @param orgArray
+     * @param orgArrayFiltered
+     * @param revArray
+     * @param revArrayFiltered
+     */
+    private void adjustRevision(
+        JMRevision revision, 
+        Object[] orgArray, JMString[] orgArrayFiltered, 
+        Object[] revArray, JMString[] revArrayFiltered) {
 
-  class JMString
-  {
-    String s;
-    int lineNumber;
+        for (JMDelta delta : revision.getDeltas()) {
+            JMChunk chunk = delta.getOriginal();
+            
+            // System.out.print(" original=" + chunk);
+            int index = chunk.getAnchor();
 
-    @Override
-    public int hashCode()
-    {
-      return s.hashCode();
+            int anchor = (index < orgArrayFiltered.length)
+                    ? orgArrayFiltered[index].lineNumber
+                    : orgArray.length ;
+
+            int size = chunk.getSize();
+            if (size > 0) {
+                index += chunk.getSize() - 1;
+                if (index < orgArrayFiltered.length) {
+                    size = orgArrayFiltered[index].lineNumber - anchor + 1;
+                }
+                /*
+                 * index += chunk.getSize(); if (index < orgArrayFiltered.length) { size =
+                 * orgArrayFiltered[index].lineNumber - anchor; }
+                 */
+            }
+            chunk.setAnchor(anchor);
+            chunk.setSize(size);
+            // System.out.println(" => " + chunk);
+
+            chunk = delta.getRevised();
+            // System.out.print(" revised=" + chunk);
+            index = chunk.getAnchor();
+            if (index < revArrayFiltered.length) {
+                // System.out.print(" [index=" + index + ", text="
+                // + revArrayFiltered[index].s + "]");
+                anchor = revArrayFiltered[index].lineNumber;
+            } else {
+                anchor = revArray.length;
+            }
+            size = chunk.getSize();
+            if (size > 0) {
+                index += chunk.getSize() - 1;
+                if (index < revArrayFiltered.length) {
+                    size = revArrayFiltered[index].lineNumber - anchor + 1;
+                }
+                /*
+                 * index += chunk.getSize(); if (index < revArrayFiltered.length) { size =
+                 * revArrayFiltered[index].lineNumber - anchor; }
+                 */
+            }
+            chunk.setAnchor(anchor);
+            chunk.setSize(size);
+            // System.out.println(" => " + chunk);
+        }
     }
 
-    @Override
-    public boolean equals(Object o)
-    {
-      return s.equals(((JMString) o).s);
+    private JMString[] filter(Ignore ignore, Object[] array) {
+        
+        synchronized (inputLine) {
+            // System.out.println("> start");
+            final List<JMString> result = new ArrayList<JMString>(array.length);
+            int lineNumber;
+
+            lineNumber = -1;
+            for (Object o : array) {
+                lineNumber++;
+
+                inputLine.clear();
+                inputLine.put(o.toString());
+                CompareUtil.removeIgnoredChars(inputLine, ignore, outputLine);
+                if (outputLine.remaining() == 0) {
+                    continue;
+                }
+
+                final JMString jms = new JMString();
+                jms.s = outputLine.toString();
+                jms.lineNumber = lineNumber;
+                result.add(jms);
+
+                // System.out.println(" " + jms);
+            }
+            
+            return result.toArray(new JMString[result.size()]);            
+        }
+
     }
 
-    @Override
-    public String toString()
-    {
-      return "[" + lineNumber + "] " + s;
+    /**
+     * Though a minor/trivial class, there is no reason this needs to be an inner class.
+     * 
+     * @author rwellman
+     *
+     */
+    class JMString {
+        String s;
+        int lineNumber;
+
+        @Override
+        public int hashCode() {
+            return s.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return s.equals(((JMString) o).s);
+        }
+
+        @Override
+        public String toString() {
+            return "[" + lineNumber + "] " + s;
+        }
     }
-  }
+
 }

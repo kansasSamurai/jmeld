@@ -1,18 +1,61 @@
+/* 
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
+   JMeld is a visual diff and merge tool.
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+   
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
+   Boston, MA  02110-1301  USA
+   
+ */
+
 package org.jmeld.ui.util;
 
-import com.jgoodies.looks.plastic.Plastic3DLookAndFeel;
-import com.jgoodies.looks.plastic.PlasticLookAndFeel;
-import com.jidesoft.plaf.LookAndFeelFactory;
+import java.awt.Component;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.LookAndFeel;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+
 import org.jmeld.JMeld;
 import org.jmeld.settings.JMeldSettings;
 import org.jmeld.util.ObjectUtil;
 
-import javax.swing.*;
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
+import com.jgoodies.looks.plastic.Plastic3DLookAndFeel;
+import com.jgoodies.looks.plastic.PlasticLookAndFeel;
+import com.jidesoft.plaf.LookAndFeelFactory;
 
+/**
+ * 
+ * @author jmeld-legacy
+ * @author Rick Wellman committed
+ *
+ */
 public class LookAndFeelManager {
+
     // Class variables:
     private static LookAndFeelManager instance;
 
@@ -38,8 +81,6 @@ public class LookAndFeelManager {
     }
 
     public void install() {
-        String version;
-        Plastic3DLookAndFeel plastic;
         String lookAndFeelName;
         String lookAndFeelClassName;
         Component root;
@@ -73,8 +114,8 @@ public class LookAndFeelManager {
         lf = UIManager.getLookAndFeel();
 
         // WATCH OUT:
-        //   The lookandfeel can be registered in the UIManager with a different
-        //   name than the lookAndFeel.getName() (Is this a bug?)
+        // The lookandfeel can be registered in the UIManager with a different
+        // name than the lookAndFeel.getName() (Is this a bug?)
 
         for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
             if (ObjectUtil.equals(info.getClassName(), lf.getClass().getName())) {

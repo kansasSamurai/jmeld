@@ -44,6 +44,7 @@ import javax.swing.JLabel;
 import javax.swing.Timer;
 
 /**
+ * Provides the "spinner" icon in the bottom right of the status bar
  * 
  * @author jmeld-legacy
  * @author Rick Wellman
@@ -55,11 +56,13 @@ public class BusyLabel extends JLabel {
   // Instance variables:
   private Timer timer;
   private boolean busy;
-  private BusyIcon icon;
+  private static BusyIcon icon;
 
   public BusyLabel() {
 
-      this.setIcon(icon = new BusyIcon());
+      if (icon == null) {
+          icon = new BusyIcon();
+      }
 
       timer = new Timer(125, busy());
       timer.setRepeats(false);
@@ -67,13 +70,20 @@ public class BusyLabel extends JLabel {
 
   public void start() {
     busy = true;
+    this.setIcon(icon);
     timer.restart();
   }
 
   public void stop() {
-    busy = false;
+      this.setIcon(null);
+      busy = false;
   }
 
+  /**
+   * Creates the ActionListener for the Timer
+   * 
+   * @return
+   */
   private ActionListener busy() {
     return new ActionListener() {
       public void actionPerformed(ActionEvent ae) {

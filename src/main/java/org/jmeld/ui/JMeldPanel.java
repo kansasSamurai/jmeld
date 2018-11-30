@@ -1,29 +1,46 @@
-/*
+/* 
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
    JMeld is a visual diff and merge tool.
-   Copyright (C) 2007  Kees Kuip
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
+   
  */
+
 package org.jmeld.ui;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -40,14 +57,13 @@ import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
 import javax.swing.JToolBar;
+import javax.swing.ProgressMonitor;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import jiconfont.icons.FontAwesome;
-import jiconfont.swing.IconFontSwing;
-
+import org.jdesktop.swingworker.SwingWorker;
 import org.jmeld.Version;
 import org.jmeld.settings.JMeldSettings;
 import org.jmeld.ui.action.ActionHandler;
@@ -77,6 +93,7 @@ import com.jidesoft.swing.JideTabbedPane;
  * I like to think of this class as the "DocumentManager" user interface.
  * 
  * @author jmeld-legacy
+ * @author Rick Wellman
  *
  */
 @SuppressWarnings("serial")
@@ -288,14 +305,12 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         final ToolBarBuilder builder = new ToolBarBuilder(tb);
 
         button = WidgetFactory.getToolBarButton(getAction(actions.NEW));
-        button.setRolloverEnabled(true);
-        button.setRolloverIcon(IconFontSwing.buildIcon(FontAwesome.FILE_TEXT, 18, Color.black));
         builder.addButton(button);
-
-        builder.addSeparator();
 
         button = WidgetFactory.getToolBarButton(getAction(actions.SAVE));
         builder.addButton(button);
+
+        builder.addSeparator();
 
         button = WidgetFactory.getToolBarButton(getAction(actions.UNDO));
         builder.addButton(button);
@@ -303,17 +318,15 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         button = WidgetFactory.getToolBarButton(getAction(actions.REDO));
         builder.addButton(button);
 
-        builder.addSeparator();
+        builder.addSpring();
+
+        button = WidgetFactory.getToolBarButton(getAction(actions.SETTINGS));
+        builder.addButton(button);
 
         button = WidgetFactory.getToolBarButton(getAction(actions.HELP));
         builder.addButton(button);
 
         button = WidgetFactory.getToolBarButton(getAction(actions.ABOUT));
-        builder.addButton(button);
-
-        builder.addSpring();
-
-        button = WidgetFactory.getToolBarButton(getAction(actions.SETTINGS));
         builder.addButton(button);
 
         return tb;
@@ -347,11 +360,11 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         actionHandler = new ActionHandler();
 
         action = actionHandler.createAction(this, actions.NEW);
-        action.setIcon(FontAwesome.FILE_O); // .setIcon("stock_new");
+        action.setIcon("stock_new");
         action.setToolTip("Merge 2 new files");
 
         action = actionHandler.createAction(this, actions.SAVE);
-        action.setIcon(FontAwesome.FLOPPY_O, null, 22); // .setIcon("stock_save");
+        action.setIcon("stock_save");
         action.setToolTip("Save the changed files");
         
         if (!STANDALONE_INSTALLKEY_OPTION.isEnabled()) {
@@ -359,13 +372,14 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
         }
 
         action = actionHandler.createAction(this, actions.UNDO);
-        action.setIcon(FontAwesome.ARROW_CIRCLE_O_LEFT, null, 22); // .setIcon("stock_undo");
+        action.setIcon("stock_undo");
         action.setToolTip("Undo the latest change");
+        
         installKey("control Z", action);
         installKey("control Y", action);
 
         action = actionHandler.createAction(this, actions.REDO);
-        action.setIcon(FontAwesome.ARROW_CIRCLE_O_RIGHT, null, 22); // .setIcon("stock_redo");
+        action.setIcon("stock_redo");
         action.setToolTip("Redo the latest change");
         installKey("control R", action);
 
@@ -431,14 +445,14 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
 
         if (!STANDALONE_INSTALLKEY_OPTION.isEnabled()) {
             action = actionHandler.createAction(this, actions.HELP);
-            action.setIcon(FontAwesome.COMMENT_O); // .setIcon("stock_help-agent");
+            action.setIcon("stock_help-agent");
             installKey("F1", action);
 
             action = actionHandler.createAction(this, actions.ABOUT);
-            action.setIcon(FontAwesome.INFO_CIRCLE, null, 20); // .setIcon("stock_about");
+            action.setIcon("stock_about");
 
             action = actionHandler.createAction(this, actions.SETTINGS);
-            action.setIcon(FontAwesome.COGS);// .setIcon("stock_preferences");
+            action.setIcon("stock_preferences");
             action.setToolTip("Settings");
 
             action = actionHandler.createAction(this, actions.EXIT);
@@ -464,7 +478,7 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
     public void doNew(ActionEvent ae) {
         
         final PanelDialog dialog = new PanelDialog(this);
-        dialog.show();
+        dialog.show(); // this "blocks" until the user closes the dialog
 
         // TODO Son todo SwingWorker<String, Object>;
         // Agregar una interfaz común
@@ -473,6 +487,12 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
                     new File(dialog.getLeftFileName()),
                     new File(dialog.getRightFileName())   );
             fc.setOpenInBackground(false);
+            
+                ProgressMonitor pm = new ProgressMonitor(this, "Progress...", null, 0, 100);
+                //pm.setMillisToDecideToPopup(2000); // 2 seconds
+                pm.setProgress(20);
+            
+            fc.addPropertyChangeListener(this.getFileComparePCListener(pm, fc));
             fc.execute();
         } else if (dialog.getFunction() == PanelDialog.Function.DIRECTORY_COMPARISON) {
             DirectoryComparison dc = new DirectoryComparison(this, 
@@ -486,6 +506,26 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
                     new File(dialog.getVersionControlDirectoryName()));
             vc.execute();
         }
+    }
+
+    /**
+     * This is called on the EDT so we can make "simple" updates to Swing components/properties.
+     * 
+     * @param pm
+     * @param task
+     * @return
+     */
+    @SuppressWarnings("rawtypes")
+    private PropertyChangeListener getFileComparePCListener(final ProgressMonitor pm, final SwingWorker task) {
+        final PropertyChangeListener pcl = new PropertyChangeListener() {
+            @Override public void propertyChange(PropertyChangeEvent evt) {
+                if ( pm.isCanceled() || task.isDone() ) {
+                    // This is where we would do something
+                }
+            }
+            
+        };
+        return pcl;
     }
 
     public void doSave(ActionEvent ae) {
@@ -777,9 +817,7 @@ public class JMeldPanel extends JPanel implements ConfigurationListenerIF {
 
         final AbstractContentPanel content = new SettingsPanel(this);
         content.setId(contentId);
-
-        // TODO replace with new icon, ImageUtil.getSmallImageIcon("stock_preferences")
-        getTabbedPane().addTab("Settings", IconFontSwing.buildIcon(FontAwesome.COG, 12, Color.black) , content);
+        getTabbedPane().addTab("Settings", ImageUtil .getSmallImageIcon("stock_preferences"), content);
         getTabbedPane().setSelectedComponent(content);
     }
 

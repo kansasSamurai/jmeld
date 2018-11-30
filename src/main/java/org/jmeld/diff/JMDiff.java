@@ -31,59 +31,73 @@
  */
 package org.jmeld.diff;
 
-import org.jmeld.*;
-import org.jmeld.ui.text.*;
-import org.jmeld.util.*;
-import org.jmeld.util.file.*;
+import java.nio.CharBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-import java.util.*;
-import java.nio.*;
+import org.jmeld.JMeldException;
+import org.jmeld.ui.text.AbstractBufferDocument;
+import org.jmeld.util.Ignore;
+import org.jmeld.util.StopWatch;
+import org.jmeld.util.file.CompareUtil;
 
 /**
+ * This is the class that actually performs/starts the "diff" process.
+ * Currently, it only invokes the EclipseDiff instance.
+ * 
+ * A brief analysis of this class shows that this is/could/should be a singleton.
+ * However, it currently uses a shared/static buffer so I am guessing that it is
+ * possible for this to be mis-used since several classes instantiate new
+ * instances of this JMDiff class (use IDE 'references' feature).
+ * 
+ * So... I'm not currently sure if it IS causing issues, but it looks like
+ * it is susceptible if used in the wrong way.
  * 
  * @author jmeld-legacy
- * @author Rick Wellman
+ * @author Rick Wellman committed
  *
  */
 public class JMDiff {
+
+    public static int BUFFER_SIZE = 100000;
+
+    // Class variables:
+
+    // Allocate a charBuffer once for performance. 
+    // The charbuffer is used to store a 'line' WITHOUT the ignored characters.
+    static final private CharBuffer inputLine = CharBuffer.allocate(BUFFER_SIZE);
+    static final private CharBuffer outputLine = CharBuffer.allocate(BUFFER_SIZE);
+
+    // Instance variables:
+    private List<JMDiffAlgorithmIF> algorithms;
+
+    public JMDiff() {
+
+        this.algorithms = new ArrayList<JMDiffAlgorithmIF>();
+        // Timing/Memory (msec/Mb):
+        //                                             Myers  Eclipse GNU Hunt
+        //  ================================================================================
+        //  2 Totally different files  (116448 lines)  31317  1510    340 195
+        //  2 Totally different files  (232896 lines)  170673 212     788 354
+        //  2 Medium different files  (1778583 lines)  41     55      140 24679
+        //  2 Medium different files (10673406 lines)  216    922     632 >300000
+        //  2 Equal files             (1778583 lines)  32     55      133 24632
+        //  2 Equal files            (10673406 lines)  121    227     581 >60000
     
-  public static int BUFFER_SIZE=100000;
-  
-  // Class variables:
-
-  // Allocate a charBuffer once for performance. The charbuffer is used to store a 'line' without it's ignored characters. 
-  static final private CharBuffer inputLine = CharBuffer.allocate(BUFFER_SIZE);
-  static final private CharBuffer outputLine = CharBuffer.allocate(BUFFER_SIZE);
-  
-  // Instance variables:
-  private List<JMDiffAlgorithmIF> algorithms;
-
-  public JMDiff() {
-      
-      this.algorithms = new ArrayList<JMDiffAlgorithmIF>();
-    // Timing/Memory (msec/Mb):
-    //                                             Myers  Eclipse GNU Hunt
-    //  ================================================================================
-    //  2 Totally different files  (116448 lines)  31317  1510    340 195
-    //  2 Totally different files  (232896 lines)  170673 212     788 354
-    //  2 Medium different files  (1778583 lines)  41     55      140 24679
-    //  2 Medium different files (10673406 lines)  216    922     632 >300000
-    //  2 Equal files             (1778583 lines)  32     55      133 24632
-    //  2 Equal files            (10673406 lines)  121    227     581 >60000
-
-    // MyersDiff is the fastest but can be very slow when 2 files are very different.
-    MyersDiff myersDiff = new MyersDiff();
-    myersDiff.checkMaxTime(true);
-    //algorithms.add(myersDiff);
-
-    // EclipseDiff looks like Myersdiff but is slower.
-    // It performs much better if the files are totally different
-    algorithms.add(new EclipseDiff());
-
-    // HuntDiff (from netbeans) is very, very slow
-    //algorithms.add(new HuntDiff());
+        // MyersDiff is the fastest but can be very slow when 2 files are very different.
+        MyersDiff myersDiff = new MyersDiff();
+        myersDiff.checkMaxTime(true);
+        //algorithms.add(myersDiff);
     
-  }
+        // EclipseDiff looks like Myersdiff but is slower.
+        // It performs much better if the files are totally different
+        algorithms.add(new EclipseDiff());
+    
+        // HuntDiff (from netbeans) is very, very slow
+        //algorithms.add(new HuntDiff());
+    
+    }
 
     public JMRevision diff(List<String> a, List<String> b, Ignore ignore) throws JMeldException {
         if (a == null) {
@@ -110,7 +124,6 @@ public class JMDiff {
         final boolean filtered = org instanceof AbstractBufferDocument.Line[] && rev instanceof AbstractBufferDocument.Line[];
         final StopWatch sp = new StopWatch(); {
             sp.start();
-    
             if (filtered) {
                 org = filter(ignore, org);
                 rev = filter(ignore, rev);
@@ -230,12 +243,7 @@ public class JMDiff {
                     continue;
                 }
 
-                final JMString jms = new JMString();
-                jms.s = outputLine.toString();
-                jms.lineNumber = lineNumber;
-                result.add(jms);
-
-                // System.out.println(" " + jms);
+                result.add(new JMString(outputLine.toString(), lineNumber));
             }
             
             return result.toArray(new JMString[result.size()]);            
@@ -253,6 +261,14 @@ public class JMDiff {
         String s;
         int lineNumber;
 
+        public JMString() {}
+        
+        public JMString(String astring, int lineno) {
+            this.s = astring;
+            this.lineNumber = lineno;
+            // System.out.println(" " + this);
+        }
+        
         @Override
         public int hashCode() {
             return s.hashCode();

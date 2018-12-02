@@ -1,5 +1,6 @@
 #maven
 target
+release
 
 #eclipse
 bin/

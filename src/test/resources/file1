@@ -8,6 +8,8 @@ werwer
 sdfasd
 }
 
-
+function(bazz) {
+   echo nothing
+}
 
 1234

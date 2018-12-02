@@ -39,11 +39,15 @@ or use [mvnexec](https://github.com/albfan/mvnexec)
     $ mvnexec -BCDPqaf jmeld.JMeld src/test/resources/file{1,2}
     $ mvnexec -BCDPqaf component src/test/resources/file{1,2} 
 
-> trust me, that commands works out-of-the-box
-
 ## License
 
-This license of this program is the LGPL.
+This license of this program is the GNU LGPL.
+
+## Preferences
+
+* Windows : Computer\HKEY_CURRENT_USER\Software\JavaSoft\Prefs\org\jmeld\*
+* Linux : TBD
+* Mac : TBD
 
 ## Credits
 

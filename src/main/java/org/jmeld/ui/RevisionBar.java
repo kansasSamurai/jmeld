@@ -36,6 +36,8 @@ import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -43,7 +45,6 @@ import java.awt.event.MouseListener;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
-import javax.swing.JScrollBar;
 
 import org.jmeld.diff.JMChunk;
 import org.jmeld.diff.JMDelta;
@@ -55,12 +56,12 @@ import org.jmeld.ui.util.RevisionUtil;
 /**
  * This custom JComponent is the visual "diff summary" displayed on the side of each BufferDiffPanel.
  * 
- * @author jmeld-legacy
- * @author Rick Wellman
+ * @author jmeld-legacy 
+ * @author Rick Wellman 
  *
  */
 @SuppressWarnings("serial")
-public class RevisionBar extends JComponent {
+public class RevisionBar extends JComponent implements HierarchyListener {
     
     private FilePanel filePanel;
 
@@ -75,28 +76,32 @@ public class RevisionBar extends JComponent {
         this.filePanel = filePanel;
         this.original = original;
 
-        setBorder(BorderFactory.createLineBorder(
+        this.setBorder(BorderFactory.createLineBorder( // TODO ... this border does not seem to be getting painted?
             ColorUtil.darker(
-            ColorUtil.darker(
-                    Colors.getPanelBackground()))   
-                ));
+            ColorUtil.darker( Colors.getPanelBackground())) ));
 
-        addMouseListener(getMouseListener());
+        this.addMouseListener(getMouseListener());
+        
+        this.filePanel.getScrollPane().getVerticalScrollBar().addHierarchyListener(this);
     }
 
+    /**
+     * Respond to mouse clicks
+     * 
+     * @return
+     */
     private MouseListener getMouseListener() {
         return new MouseAdapter() {
             public void mouseClicked(MouseEvent me) {
-
-                final Rectangle r = getDrawableRectangle();
-                if (r == null) {
-                    return;
-                } else if (r.height <= 0) {
-                    return;
-                }
+                System.out.print(".me");
 
                 final JMRevision revision = diffPanel.getCurrentRevision();
                 if (revision == null) {
+                    return;
+                }
+
+                final Rectangle r = getDrawableRectangle();
+                if (r == null || r.height <= 0) {
                     return;
                 }
 
@@ -111,10 +116,10 @@ public class RevisionBar extends JComponent {
                     line = 0;
                 }
 
-                // If the files are very large the resolution of one pixel contains a lot of
-                // lines of the document.
-                // Check if there is a chunk in the revision between those lines and if there is
-                // position on that chunk.
+                // If the files are very large the resolution of one pixel 
+                // contains a lot of lines of the document.
+                // Check if there is a chunk in the revision between those lines 
+                // and if there is position on that chunk.
                 final int lineBefore = ((y - 3) * numberOfLines) / r.height;
                 final int lineAfter = ((y + 3) * numberOfLines) / r.height;
                 for (JMDelta delta : revision.getDeltas()) {
@@ -128,27 +133,35 @@ public class RevisionBar extends JComponent {
                 }
 
                 diffPanel.doGotoLine(line);
+                System.out.println("click to line: " + line);
             } // end mouseclicked
         };
     } // end mouselistener
 
     /**
-     * Calculate the rectangle that can be used to draw the diffs. It is essentially
-     * the size of the scrollbar minus its buttons.
+     * Calculate the rectangle that can be used to draw the diffs. 
+     * It is essentially the size of the scrollbar minus its buttons.
      */
     private Rectangle getDrawableRectangle() {
 
-        final JScrollBar sb = filePanel.getScrollPane().getVerticalScrollBar();
+        JComponent sb = filePanel.getScrollPane().getVerticalScrollBar();
+        boolean useScrollBar = sb.isVisible();
+        if (!useScrollBar) sb = filePanel.getEditor();
+        
         final Rectangle r = sb.getBounds();
         r.x = 0;
         r.y = 0;
 
-        for (Component c : sb.getComponents()) {
-            if (c instanceof AbstractButton) {
-                r.y += c.getHeight();
-                r.height -= (2 * c.getHeight());
-                break;
-            }
+        if (useScrollBar) {
+            for (Component c : sb.getComponents()) {
+                if (c instanceof AbstractButton) {
+                    r.y += c.getHeight();
+                    r.height -= (2 * c.getHeight());
+                    break;
+                }
+            }            
+        } else {
+            r.height = sb.getHeight();            
         }
 
         return r;
@@ -156,8 +169,10 @@ public class RevisionBar extends JComponent {
 
     public void paintComponent(Graphics g) {
         final Graphics2D g2 = (Graphics2D) g;
+        System.out.print(".pc");
         
-        final Rectangle clipBounds = g.getClipBounds();
+        final Rectangle clipBounds = g2.getClipBounds();
+        
         final Rectangle r = getDrawableRectangle();
         r.x = clipBounds.x;
         r.width = clipBounds.width;
@@ -165,40 +180,51 @@ public class RevisionBar extends JComponent {
         // Paint the background (in white)
         g2.setColor(Color.white);
         g2.fill(r);
-
-        // If there are no revisions, no need to paint anything else
-        final JMRevision revision = diffPanel.getCurrentRevision();
-        if (revision == null) {
-            return;
-        }
-
-        // If there are "no lines", no need to paint anything else
-        final int numberOfLines = getNumberOfLines(revision);
-        if (numberOfLines <= 0) {
-            return;
-        }
-
-        // Finally, paint each delta
-        for (JMDelta delta : revision.getDeltas()) {
-
-            final JMChunk chunk = original ? delta.getOriginal() : delta.getRevised();
-
-            // Calculate geometry
-            final int y = r.y + (r.height * chunk.getAnchor()) / numberOfLines;
-            final int heightCalc = (r.height * chunk.getSize()) / numberOfLines;
-            final int height = heightCalc <= 0 ? 1 : heightCalc;
-            
-            // Set the color corresponding to the delta type then paint the delta
-            g2.setColor(RevisionUtil.getOpaqueColor(delta));
-            g2.fillRect(0, y, r.width, height);
-            
-        }
         
+        int numberOfLines = -1;
+        final JMRevision revision = diffPanel.getCurrentRevision();
+        if (revision != null) numberOfLines = getNumberOfLines(revision);
+
+        if ( revision != null && numberOfLines > 0) {
+            
+            // Paint each delta
+            System.out.println("painting revisions: " + revision.getDeltas().size());
+            for (JMDelta delta : revision.getDeltas()) {
+
+                final JMChunk chunk = original ? delta.getOriginal() : delta.getRevised();
+
+                // Calculate geometry
+                final int y = r.y + (r.height * chunk.getAnchor()) / numberOfLines;
+                final int heightCalc = (r.height * chunk.getSize()) / numberOfLines;
+                final int height = heightCalc <= 0 ? 1 : heightCalc;
+                
+                // Set the color corresponding to the delta type then paint the delta
+                g2.setColor(RevisionUtil.getOpaqueColor(delta));
+                g2.fillRect(0, y, r.width, height);
+                
+            }
+
+        }
+
+        // Finally, Paint a "border"
+        g2.setColor(Color.BLACK);
+        g2.drawRect(r.x, r.y, r.width-1, r.height-1);
+
         g2.dispose();
+        return;
+
     }
 
     private int getNumberOfLines(JMRevision revision) {
         return original ? revision.getOrgSize() : revision.getRevSize();
+    }
+
+    @Override
+    public void hierarchyChanged(HierarchyEvent e) {
+        //We don't really need the scrollbar, we just need to know that this event occurred on it
+        //final JScrollBar sb = (JScrollBar) e.getSource();
+        this.revalidate();
+        this.repaint();
     }
 
 }

@@ -1,8 +1,6 @@
-/*
-   JMeld is a visual diff and merge tool.
-   
-   -----
-   Copyright (C) 2018  Rick Wellman
+/* 
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
    
    This library is free software and has been modified according to the permissions 
    granted below; this version of the library continues to be distributed under the terms of the
@@ -10,6 +8,7 @@
    and may, therefore, be redistributed or further modified under the same terms as the original.
    
    -----
+   JMeld is a visual diff and merge tool.
    Copyright (C) 2007  Kees Kuip - GNU LGPL
    
    This library is free software; you can redistribute it and/or
@@ -28,10 +27,9 @@
    Free Software Foundation, Inc.
    51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
+   
  */
 package org.jmeld.diff;
-
-import java.math.BigDecimal;
 
 import org.eclipse.compare.rangedifferencer.IRangeComparator;
 import org.eclipse.compare.rangedifferencer.RangeDifference;
@@ -40,16 +38,27 @@ import org.jmeld.JMeldException;
 
 /**
  * 
- * @author jmeld-legacy
+ * @author jmeld-legacy 
  * @author Rick Wellman
  *
  */
 public class EclipseDiff extends AbstractJMDiffAlgorithm {
    
+    private static CompareAware compareObject;
+    
     /**
      * No-args Constructor
      */
     public EclipseDiff() {
+    }
+
+    /**
+     * Allow injection of a CompareAware implementation.
+     * 
+     * @param co
+     */
+    public void setCompareObject(CompareAware co) {
+        compareObject = co;
     }
 
     @Override
@@ -133,162 +142,18 @@ public class EclipseDiff extends AbstractJMDiffAlgorithm {
             }
             
             if (o1.equals(o2)) { return true; }
-// ======================= TSS Customization ==========================
-            else if (this.compareCSTM(o1, o2)) { return true; }
-
-            return false;
-        }
-
-// ======================= TSS Customization ==========================
-        private boolean compareCSTM(Object o1, Object o2) {
-
-            // These are called first
-            if (o1 instanceof JMDiff.JMString && o2 instanceof JMDiff.JMString) {
-                final String left = ((JMDiff.JMString)o1).s;
-                final String right = ((JMDiff.JMString)o2).s;
-
-                if ( (left.length() < segmentindex) || (right.length() < segmentindex) ) {
-                    return left.equals(right);
+            else {
+                if (compareObject != null)  {
+                    return compareObject.compare(o1, o2); 
+                } else {
+                    int format = 2;
+                    switch (format) {
+                    case 1: return new CompareCSF().compare(o1, o2); 
+                    case 2: return new CompareCRISP().compare(o1, o2);
+                    }                                    
                 }
-                
-                final String segment = left.substring(0,4);
-                switch (segment) {
-                case "HEAD":
-                case "CUST":
-                case "ACCT":
-                case "CSTM":
-                case "GENE":
-                case "DEPO":
-                case "FUND":
-                case "RECO":
-                case "LOCK":
-                case "INFO":
-                case "AMT2":
-                case "AMT4":
-                case "SAMT":
-                    if ( right.startsWith(segment) ) 
-                        return compareStatementStrings(segment, left, right); // true;
-                    else 
-                        return false;
-                }
-                
-                return left.equals(right);
             }
-         
-            // These are called next... reason pending
-            if (o1 instanceof String && o2 instanceof String) {
-                final String left = (String)o1;
-                final String right = (String)o2;
-                return left.equals(right); // this.compareStatementStrings(left, right);
-            }
-            
-            return false;
-        }
-        
-        private boolean compareStatementStrings(String segment, String left, String right) {
 
-            if (true) { // Level 1 // used to do this but then re-designed: leftSegment.equals(rightSegment)
-                
-                final String[] larray = left.split("~");
-                final String[] rarray = right.split("~");
-                
-                switch (segment) {
-                case "HEAD":
-                    for (int i=0; i < larray.length; i++) {
-                        switch (i) {
-                        case 0: // HEAD
-                        case 1: // 
-                        case 5: //
-                        case 6: //
-                            if ( ! larray[i].equals(rarray[i]) ) 
-                                return false; // keep this on a separate line for debugging
-                            break;
-                        default:
-                            // do nothing; i.e. ignore differences in these fields
-                        }
-                    }
-                    return true; // break; < unnecessary
-                case "CUST":
-                case "ACCT":
-                    for (int i=0; i < larray.length; i++) {
-                        switch (i) {
-                        case 0: // segment id
-                        case 1: // 
-                        case 2: //
-                        case 3: //
-                        case 4: //
-                            if ( ! larray[i].equals(rarray[i]) ) return false;
-                            break;
-                        default:
-                            // do nothing; i.e. ignore differences in these fields
-                        }
-                    }
-                    return true; // break; < unnecessary
-                case "CSTM":
-                    counterCSTM++;
-                    for (int i=0; i < larray.length; i++) {
-                        if (i < valueindex) {
-                            if ( ! larray[i].equals(rarray[i]) ) return false;
-                        } else {
-                            left = larray[i].replace("+", "").replace("-", "").replace(",", "");
-                            right = rarray[i].replace("+", "").replace("-", "").replace(",", "");
-                            
-                            // TODO 4th column does not always have a value... for now just return true.
-                            // This will have to be improved if we enable the checks below.
-                            if (left.equals("") || right.equals("")) {
-                                return true;
-                            }
-                            
-                            final BigDecimal lvalue = new BigDecimal(left).multiply(ONE_HUNDRED);
-                            final BigDecimal rvalue = new BigDecimal(right).multiply(ONE_HUNDRED);
-                            final int delta =  Math.abs( lvalue.subtract(rvalue).intValue() );
-                            if      ( delta == 1 ) deltaCSTM[0] += 1; // { deltaCSTM[0] += 1; return true; } 
-                            else if ( delta < 11 ) deltaCSTM[1] += 1;
-                            else if ( delta < 101 ) deltaCSTM[2] += 1;
-                            else if ( delta < 1001 ) deltaCSTM[3] += 1;
-                            else                      deltaCSTM[4] += 1;
-                            return true; // for now... all deltas of value are to be ignored
-                        }
-                    }
-                    return false; // break; < unnecessary
-                case "SAMT":
-                    counterSAMT++;
-                    return true; // break; < unnecessary
-                case "AMT2":
-                case "AMT4":
-                    for (int i=0; i < larray.length; i++) {
-                        if (i < 2) {
-                            if ( ! larray[i].equals(rarray[i]) ) return false;
-                        } else {
-                            // If we get this far, the "prefix" is the same; ignore the rest by returning true.
-                            return true; 
-                        }
-                    }
-                    break;
-                case "GENE":
-                case "DEPO":
-                case "FUND":
-                case "RECO":
-                case "LOCK":
-                case "INFO":
-                    for (int i=0; i < larray.length; i++) {
-                        if (i < 3) {
-                            if ( ! larray[i].equals(rarray[i]) ) return false;
-                        } else {
-                            // If we get this far, the "prefix" is the same; ignore the rest by returning true.
-                            return true; 
-                        }
-                    }
-                    break;
-                default:
-                    System.out.println("Something not accounted for...");
-                    System.out.println("...  left: " + left);
-                    System.out.println("\r\n... right: " + right);
-                    return left.equals(right);
-                }
-
-            }
-            
             return false;
         }
 
@@ -299,12 +164,5 @@ public class EclipseDiff extends AbstractJMDiffAlgorithm {
         }
 
     } // end class RangeComparator
-
- // ======================= TSS Customization ==========================
-    private int counterCSTM; private int[] deltaCSTM = { 0, 0, 0, 0, 0 };
-    private int counterSAMT;
-    private int valueindex = 3; // just here so that I can change at debug time if necessary
-    private int segmentindex = 4;
-    private final BigDecimal ONE_HUNDRED = new BigDecimal("100");
-
+    
 }

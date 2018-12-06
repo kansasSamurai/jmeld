@@ -55,7 +55,7 @@ import org.jmeld.util.file.CompareUtil;
  * it is susceptible if used in the wrong way.
  * 
  * @author jmeld-legacy
- * @author Rick Wellman committed
+ * @author Rick Wellman
  *
  */
 public class JMDiff {
@@ -249,40 +249,6 @@ public class JMDiff {
             return result.toArray(new JMString[result.size()]);            
         }
 
-    }
-
-    /**
-     * Though a minor/trivial class, there is no reason this needs to be an inner class.
-     * 
-     * @author rwellman
-     *
-     */
-    class JMString {
-        String s;
-        int lineNumber;
-
-        public JMString() {}
-        
-        public JMString(String astring, int lineno) {
-            this.s = astring;
-            this.lineNumber = lineno;
-            // System.out.println(" " + this);
-        }
-        
-        @Override
-        public int hashCode() {
-            return s.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            return s.equals(((JMString) o).s);
-        }
-
-        @Override
-        public String toString() {
-            return "[" + lineNumber + "] " + s;
-        }
     }
 
 }

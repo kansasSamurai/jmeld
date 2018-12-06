@@ -1,21 +1,50 @@
-/*
- * EditorPreferencePanel.java
- *
- * Created on January 10, 2007, 6:31 PM
+/* 
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
+   JMeld is a visual diff and merge tool.
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+   
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
+   Boston, MA  02110-1301  USA
+   
  */
 
 package org.jmeld.ui.settings;
 
 /**
- *
- * @author  kees
+ * A base class for EditorSettingsPanel.
+ * 
+ * This class should be modified using the NetBeans IDE visual GUI tools.
+ * 
+ * @author kees
+ * @author Rick Wellman
+ * 
  */
-public class EditorSettingsForm
-    extends javax.swing.JPanel
-{
+public class EditorSettingsForm extends javax.swing.JPanel {
+    
   /** Creates new form EditorPreferencePanel */
-  public EditorSettingsForm()
-  {
+  public EditorSettingsForm() {
     initComponents();
   }
 
@@ -59,6 +88,7 @@ public class EditorSettingsForm
         defaultEncodingRadioButton = new javax.swing.JRadioButton();
         detailHeader5 = new org.jmeld.ui.swing.DetailHeader();
         ignoreCaseCheckBox = new javax.swing.JCheckBox();
+        ignoreGroovyCheckBox = new javax.swing.JCheckBox();
         ignoreBlankLinesCheckBox = new javax.swing.JCheckBox();
         ignoreEOLCheckBox = new javax.swing.JCheckBox();
         ignoreWhitespaceAtEndCheckBox = new javax.swing.JCheckBox();
@@ -238,6 +268,9 @@ public class EditorSettingsForm
 
         ignoreCaseCheckBox.setText("Ignore case");
         ignoreCaseCheckBox.setBorder(null);
+        
+        ignoreGroovyCheckBox.setText("Ignore using custom logic");
+        ignoreGroovyCheckBox.setBorder(null);
 
         ignoreBlankLinesCheckBox.setText("Ignore blank lines");
         ignoreBlankLinesCheckBox.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 0, 0, 0));
@@ -317,6 +350,7 @@ public class EditorSettingsForm
                             .add(ignoreWhitespaceAtBeginCheckBox)
                             .add(ignoreBlankLinesCheckBox)
                             .add(ignoreCaseCheckBox)
+                            .add(ignoreGroovyCheckBox)
                             .add(ignoreWhitespaceAtEndCheckBox)
                             .add(ignoreWhitespaceInBetweenCheckBox, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                 .addContainerGap())
@@ -338,6 +372,8 @@ public class EditorSettingsForm
                 .add(ignoreBlankLinesCheckBox)
                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                 .add(ignoreCaseCheckBox)
+                .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
+                .add(ignoreGroovyCheckBox)
                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
                 .add(detailHeader7, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
@@ -462,6 +498,7 @@ public class EditorSettingsForm
     protected javax.swing.JCheckBox ignoreWhitespaceAtBeginCheckBox;
     protected javax.swing.JCheckBox ignoreWhitespaceAtEndCheckBox;
     protected javax.swing.JCheckBox ignoreWhitespaceInBetweenCheckBox;
+    protected javax.swing.JCheckBox ignoreGroovyCheckBox;
     protected javax.swing.JLabel jLabel1;
     protected javax.swing.JLabel jLabel2;
     protected javax.swing.JLabel jLabel3;

@@ -57,12 +57,13 @@ import org.jmeld.util.conf.ConfigurationListenerIF;
 import com.l2fprod.common.swing.JFontChooser;
 
 /**
- * EditorPreferencePanel.java
+ * EditorSettingsPanel.java
  *
  * Created on January 10, 2007, 6:31 PM
  *
  * @author kees
  * @author Rick Wellman
+ * 
  */
 public class EditorSettingsPanel extends EditorSettingsForm implements ConfigurationListenerIF {
     
@@ -92,6 +93,7 @@ public class EditorSettingsPanel extends EditorSettingsForm implements Configura
         ignoreEOLCheckBox.addActionListener(getIgnoreEOLAction());
         ignoreBlankLinesCheckBox.addActionListener(getIgnoreBlankLinesAction());
         ignoreCaseCheckBox.addActionListener(getIgnoreCaseAction());
+        ignoreGroovyCheckBox.addActionListener(getIgnoreCustomLogicAction());
 
         // Miscellaneous:
         leftsideReadonlyCheckBox.addActionListener(getLeftsideReadonlyAction());
@@ -247,6 +249,14 @@ public class EditorSettingsPanel extends EditorSettingsForm implements Configura
         return new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 getEditorSettings().setIgnoreCase(ignoreCaseCheckBox.isSelected());
+            }
+        };
+    }
+    
+    private ActionListener getIgnoreCustomLogicAction() {
+        return new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                new Thread( () -> { new groovy.ui.Console().run(); } ).start();
             }
         };
     }
@@ -425,12 +435,8 @@ public class EditorSettingsPanel extends EditorSettingsForm implements Configura
     }
 
     private void initConfiguration() {
-        EditorSettings settings;
-        Font font;
-        Ignore ignore;
 
-        settings = getEditorSettings();
-        ignore = settings.getIgnore();
+        final EditorSettings settings = getEditorSettings();
         colorAddedButton.setIcon(new EmptyIcon(settings.getAddedColor(), 20, 20));
         colorAddedButton.setText("");
         colorDeletedButton.setIcon(new EmptyIcon(settings.getDeletedColor(), 20, 20));
@@ -438,12 +444,15 @@ public class EditorSettingsPanel extends EditorSettingsForm implements Configura
         colorChangedButton.setIcon(new EmptyIcon(settings.getChangedColor(), 20, 20));
         colorChangedButton.setText("");
         showLineNumbersCheckBox.setSelected(settings.getShowLineNumbers());
+
+        final Ignore ignore = settings.getIgnore();
         ignoreWhitespaceAtBeginCheckBox.setSelected(ignore.ignoreWhitespaceAtBegin);
         ignoreWhitespaceInBetweenCheckBox.setSelected(ignore.ignoreWhitespaceInBetween);
         ignoreWhitespaceAtEndCheckBox.setSelected(ignore.ignoreWhitespaceAtEnd);
         ignoreEOLCheckBox.setSelected(ignore.ignoreEOL);
         ignoreBlankLinesCheckBox.setSelected(ignore.ignoreBlankLines);
         ignoreCaseCheckBox.setSelected(ignore.ignoreCase);
+
         leftsideReadonlyCheckBox.setSelected(settings.getLeftsideReadonly());
         rightsideReadonlyCheckBox.setSelected(settings.getRightsideReadonly());
         showLevensteinCheckBox.setSelected(settings.isShowLevenstheinEditor());
@@ -456,7 +465,8 @@ public class EditorSettingsPanel extends EditorSettingsForm implements Configura
             antialiasCheckBox.setText("antialias on");
         }
         tabSizeSpinner.setValue(settings.getTabSize());
-        font = getEditorFont();
+        
+        final Font font = getEditorFont();
         fontChooserButton.setFont(font);
         fontChooserButton.setText(font.getName() + " (" + font.getSize() + ")");
         defaultFontRadioButton.setSelected(!settings.isCustomFontEnabled());

@@ -4,11 +4,11 @@
 
     <groupId>org.jmeld</groupId>
     <artifactId>jmeld</artifactId>
-    <version>3.4.0</version>
+    <version>3.4.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>jmeld</name>
-    <url>https://github.com/albfan/jmeld</url>
+    <url>https://github.com/kansasSamurai/jmeld</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -76,7 +76,7 @@
 	        <type>pom</type>
 	    </dependency>
 
-        <!-- TODO implement this in EditorSettingsPanel.java (instead of JFontChooser)
+<!-- TODO implement this in EditorSettingsPanel.java (instead of JFontChooser)
         <dependency>
            <groupId>org.drjekyll</groupId>
            <artifactId>fontchooser</artifactId>
@@ -190,7 +190,7 @@
                             <chdir />
                             <priority>normal</priority>
                             <downloadUrl>http://java.com/download</downloadUrl>
-                            <supportUrl>https://github.com/albfan/jmeld/issues</supportUrl>
+                            <supportUrl>https://github.com/kansasSamurai/jmeld/issues</supportUrl>
                             <customProcName>false</customProcName>
                             <stayAlive>false</stayAlive>
                             <manifest />
@@ -210,8 +210,8 @@
                                 <copyright>albfan</copyright>
                                 <productVersion>0.0.1.0</productVersion>
                                 <txtProductVersion>${project.version}</txtProductVersion>
-                                <productName>JMeld</productName>
-                                <companyName>albfan</companyName>
+                                <productName>JWeld</productName>
+                                <companyName>rwellman</companyName>
                                 <internalName>jmeld</internalName>
                                 <originalFilename>jmeld.exe</originalFilename>
                             </versionInfo>

@@ -119,6 +119,19 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
         return curveType;
     }
 
+    /**
+     * This is currently set via XML only; no GUI yet available.
+     * 
+     * @param drawCurves
+     */
+    private void setDrawCurves(boolean drawCurves) {
+        this.drawCurves = drawCurves;
+    }
+
+    private boolean isDrawCurves() {
+        return drawCurves;
+    }
+
     public void setShift(boolean shift) {
         this.shift = shift;
         repaint();
@@ -126,6 +139,7 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
 
     public KeyListener getKeyListener() {
         return new KeyAdapter() {
+            
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
@@ -141,21 +155,15 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                     repaint();
                 }
             }
+            
         };
     }
 
-    public boolean isDrawCurves() {
-        return drawCurves;
-    }
-
-    public void setDrawCurves(boolean drawCurves) {
-        this.drawCurves = drawCurves;
-    }
-
     private void initSettings() {
+        // Note: Sometimes, the .xml settings are overridden in JMeld.java
         final JMeldSettings settings = JMeldSettings.getInstance();
-        setDrawCurves(settings.getDrawCurves());
-        setCurveType(settings.getCurveType());
+        this.setDrawCurves(settings.getDrawCurves());
+        this.setCurveType(settings.getCurveType());
 
         final EditorSettings editorSettings = settings.getEditor();
         leftsideReadonly = editorSettings.getLeftsideReadonly();
@@ -337,8 +345,8 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                 final boolean selected = (delta == diffPanel.getSelectedDelta());
 
                 // OK, this delta has some visible lines. Now draw it!
-                final Color color = RevisionUtil.getColor(delta);
-                final Color darkerColor = RevisionUtil.getOpaqueColor(delta);
+                final Color color = RevisionUtil.getColor(delta); // <<< these are from Settings
+                final Color darkerColor = RevisionUtil.getOpaqueColor(delta); // <<< these are based on Settings based with hardcoded alpha of 160
                 
                 g2.setColor(color);
 
@@ -452,6 +460,8 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                 y1 = y;
 
                 if (isDrawCurves()) {
+                    System.out.print("Draw Curves - type ");
+                    
                     int curveX2 = x + width;
                     int curveY2 = y;
                     int curveX3 = x + width;
@@ -459,9 +469,11 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
 
                     final GeneralPath curve = new GeneralPath();
                     if (getCurveType() == 0) {
+                        System.out.println("0");
                         curve.append(new Line2D.Float(curveX4, curveY4, curveX1, curveY1), true);
                         curve.append(new Line2D.Float(curveX2, curveY2, curveX3, curveY3), true);
-                    } else if (getCurveType() == 1) {
+                    } else if (getCurveType() == 1) { // FWIW, I like this the best visually; not sure of its history
+                        System.out.println("1");
                         int posyOrg = original.getSize() > 0 ? 0 : 1;
                         int posyRev = revised.getSize() > 0 ? 0 : 1;
                         curve.append(new CubicCurve2D.Float(
@@ -481,6 +493,7 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                                 , curveX4, curveY4 + posyOrg)
                                 , true);
                     } else if (getCurveType() == 2) {
+                        System.out.println("2");
                         curve.append(new CubicCurve2D.Float(
                                   curveX1, curveY1 - 2
                                 , curveX2 + 10, curveY1
@@ -501,6 +514,8 @@ public class DiffScrollComponent extends JComponent implements ChangeListener, C
                     g2.draw(curve);
                     resetAntiAlias(g2);
                 } else {
+                    System.out.print("Draw Curves - Off ");
+
                     if (height > 0) {
                         g2.setColor(color);
                         g2.fillRect(x, y, width, height);

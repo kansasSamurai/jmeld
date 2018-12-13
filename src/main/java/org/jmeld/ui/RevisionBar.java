@@ -169,7 +169,6 @@ public class RevisionBar extends JComponent implements HierarchyListener {
 
     public void paintComponent(Graphics g) {
         final Graphics2D g2 = (Graphics2D) g;
-        System.out.print(".pc");
         
         final Rectangle clipBounds = g2.getClipBounds();
         
@@ -181,29 +180,29 @@ public class RevisionBar extends JComponent implements HierarchyListener {
         g2.setColor(Color.white);
         g2.fill(r);
         
-        int numberOfLines = -1;
         final JMRevision revision = diffPanel.getCurrentRevision();
-        if (revision != null) numberOfLines = getNumberOfLines(revision);
-
-        if ( revision != null && numberOfLines > 0) {
-            
-            // Paint each delta
-            System.out.println("painting revisions: " + revision.getDeltas().size());
-            for (JMDelta delta : revision.getDeltas()) {
-
-                final JMChunk chunk = original ? delta.getOriginal() : delta.getRevised();
-
-                // Calculate geometry
-                final int y = r.y + (r.height * chunk.getAnchor()) / numberOfLines;
-                final int heightCalc = (r.height * chunk.getSize()) / numberOfLines;
-                final int height = heightCalc <= 0 ? 1 : heightCalc;
+        if (revision == null) 
+        {} else {
+            final int numberOfLines = getNumberOfLines(revision);
+            if ( numberOfLines > 0 ) {
                 
-                // Set the color corresponding to the delta type then paint the delta
-                g2.setColor(RevisionUtil.getOpaqueColor(delta));
-                g2.fillRect(0, y, r.width, height);
-                
+                // Paint each delta
+                // System.out.println("painting revisions: " + revision.getDeltas().size());
+                for (JMDelta delta : revision.getDeltas()) {
+    
+                    final JMChunk chunk = original ? delta.getOriginal() : delta.getRevised();
+    
+                    // Calculate geometry
+                    final int y = r.y + (r.height * chunk.getAnchor()) / numberOfLines;
+                    final int heightCalc = (r.height * chunk.getSize()) / numberOfLines;
+                    final int height = heightCalc <= 0 ? 1 : heightCalc;
+                    
+                    // Set the color corresponding to the delta type then paint the delta
+                    g2.setColor(RevisionUtil.getOpaqueColor(delta));
+                    g2.fillRect(0, y, r.width, height);
+                    
+                }
             }
-
         }
 
         // Finally, Paint a "border"
@@ -212,7 +211,6 @@ public class RevisionBar extends JComponent implements HierarchyListener {
 
         g2.dispose();
         return;
-
     }
 
     private int getNumberOfLines(JMRevision revision) {

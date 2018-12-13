@@ -1,19 +1,35 @@
-/*
+/* 
+   JWeld - A diff and merge API plus GUI - Originally forked from JMeld
+   Copyright (C) 2018  Rick Wellman - GNU LGPL
+   
+   This library is free software and has been modified according to the permissions 
+   granted below; this version of the library continues to be distributed under the terms of the
+   GNU Lesser General Public License version 2.1 as published by the Free Software Foundation
+   and may, therefore, be redistributed or further modified under the same terms as the original.
+   
+   -----
    JMeld is a visual diff and merge tool.
-   Copyright (C) 2007  Kees Kuip
+   Copyright (C) 2007  Kees Kuip - GNU LGPL
+   
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 2.1 of the License, or (at your option) any later version.
+   
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor,
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+   
+   See the GNU Lesser General Public License for more details.
+   
+   You should have received a copy of the GNU Lesser General 
+   Public License along with this library; if not, write to:
+   Free Software Foundation, Inc.
+   51 Franklin Street, Fifth Floor
    Boston, MA  02110-1301  USA
+   
  */
+
 package org.jmeld.ui.swing;
 
 import org.jmeld.settings.EditorSettings;
@@ -26,6 +42,12 @@ import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
 
+/**
+ * 
+ * @author jmeld-legacy
+ * @author Rick Wellman
+ *
+ */
 public class JMHighlightPainter extends DefaultHighlighter.DefaultHighlightPainter implements ConfigurationListenerIF {
     public static final JMHighlightPainter ADDED;
     public static final JMHighlightPainter ADDED_LINE;
@@ -79,6 +101,8 @@ public class JMHighlightPainter extends DefaultHighlighter.DefaultHighlightPaint
 
     @Override
     public void paint(Graphics g, int p0, int p1, Shape shape, JTextComponent comp) {
+        System.out.println("JMHighlightPainter");
+        
         Rectangle b;
         Rectangle r1;
         Rectangle r2;
@@ -146,9 +170,9 @@ public class JMHighlightPainter extends DefaultHighlighter.DefaultHighlightPaint
         } else if (isDeleted()) {
             color = getSettings().getDeletedColor();
         } else if (isChange()) {
-            color = getSettings().getChangedColor();
+            color = getSettings().getChangedColor(); // << This is the color of the entire changed line
         } else if (isChangeLighter()) {
-            color = Colors.getChangedLighterColor(getSettings().getChangedColor());
+            color = Colors.getChangedLighterColor(getSettings().getChangedColor()); // << This is the color of *just* the changed text
         }
     }
 

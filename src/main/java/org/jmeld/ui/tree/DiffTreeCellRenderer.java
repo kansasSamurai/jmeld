@@ -87,6 +87,7 @@ class DiffTreeCellRenderer extends DefaultTreeCellRenderer {
         } else if (userObject instanceof JMDelta) {
             final JMDelta delta = (JMDelta) userObject;
             
+            // TODO a new icon object for every node could get memory expensive in large documents
             setIcon(new TreeColorIcon(RevisionUtil.getOpaqueColor(delta)));
             setText(delta.getType().toString());
             

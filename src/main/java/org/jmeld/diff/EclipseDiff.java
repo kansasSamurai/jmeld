@@ -57,7 +57,7 @@ public class EclipseDiff extends AbstractJMDiffAlgorithm {
      * 
      * @param co
      */
-    public void setCompareObject(CompareAware co) {
+    public static void setCompareObject(CompareAware co) {
         compareObject = co;
     }
 

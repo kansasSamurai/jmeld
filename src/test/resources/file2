@@ -15,3 +15,21 @@ function(bazz) {
 }
 
 1234 1256
+
+abc
+eee abdefcc aaa 4545
+asdf asdfa aaa  23123
+
+function(foo) {
+   echo hello
+}
+werwer
+
+}
+
+// abdefcc
+function(bazz) {
+   echo nothing
+}
+
+1234 1256
